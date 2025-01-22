@@ -1,3 +1,3 @@
-import useSmartFilter from "./hooks/useSmartFilter";
+import SmartFiltero from "@/components/SmartFiltero";
 
-export {useSmartFilter};
+export {SmartFiltero};

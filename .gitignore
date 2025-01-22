@@ -1,0 +1,4 @@
+node_modules
+dist
+smart-filter*.tgz
+.idea
