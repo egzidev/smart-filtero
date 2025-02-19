@@ -2,3 +2,4 @@ node_modules
 dist
 smart-filter*.tgz
 .idea
+*storybook.log

@@ -22,17 +22,26 @@ export interface ItemCmp {
 
 export interface ItemsCmp {
   isFocused: boolean;
-  query: string;
   showSubItems: Item | null;
   fetching: boolean;
   filteredItemsLength: boolean;
   children: React.ReactNode;
+  validateStyle: (style: string) => string;
+}
+
+export interface InputCmp {
+  inputRef: React.RefObject<HTMLInputElement>;
+  query: string;
+  handleInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  validateStyle: (style: string) => string;
 }
 
 export interface SubItemsCmp {
   showSubItems: Item | null;
   isFocused: boolean;
   children: React.ReactNode;
+  validateStyle: (style: string) => string;
 }
 
 export interface QueryItemCmp {
@@ -40,6 +49,7 @@ export interface QueryItemCmp {
   showSubItems: Item | null;
   isFocused: boolean;
   children: React.ReactNode;
+  validateStyle: (style: string) => string;
 }
 
 

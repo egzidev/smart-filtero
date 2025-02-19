@@ -19,6 +19,7 @@ import SelectedText from "@/components/SelectedText";
 import {X} from "lucide-react";
 import {transformLabelToQueryParam, updateURLParams} from "@/utils/url";
 import styles from '@/styles.module.css';
+import Input from "@/components/Input";
 
 const SmartFiltero: React.FC<SmartFilteroProps> = ({
   items,
@@ -280,13 +281,13 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     fetching,
     isFocused,
     filteredItemsLength: filteredItems.length > 0,
+    validateStyle,
   }
 
   const coreSelectedProps = {
     validateStyle,
     removeItem: removeSingleItem,
   }
-
 
 
   return (
@@ -311,17 +312,13 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
           )}
 
           <div ref={searchContainerRef} className={validateStyle('searchContainer')}>
-            <div className={validateStyle('searchWrapper')}>
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onFocus={handleInputFocus}
-                onChange={handleInputChange}
-                placeholder="Search..."
-                className={validateStyle('searchInput')}
-              />
-            </div>
+            <Input
+              inputRef={inputRef}
+              query={query}
+              handleInputFocus={handleInputFocus}
+              handleInputChange={handleInputChange}
+              validateStyle={validateStyle}
+            />
             {isFocused && isDropdownVisible && dropdownPosition && (
               <div className={validateStyle('dropdown')} style={{left: dropdownPosition.left}}>
                 {/* Query Item */}

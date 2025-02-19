@@ -1,4 +1,3 @@
-import styles from "@/styles.module.css";
 import React from "react";
 import {SubItemsCmp} from "@/types";
 
@@ -6,13 +5,14 @@ const SubItems: React.FC<SubItemsCmp> = ({
   showSubItems,
   isFocused,
   children,
+  validateStyle
 }) => {
   return (
     showSubItems
     && isFocused
     && !showSubItems.typed
     && (
-      <ul className={styles.dropdownSubItemContainer}>
+      <ul className={validateStyle('dropdownSubItemContainer')}>
         {children}
       </ul>
     )
