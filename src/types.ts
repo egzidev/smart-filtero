@@ -7,8 +7,8 @@ export interface Item {
   isAsync?: boolean;
   typed?: boolean;
   icon?: React.ComponentType<LucideProps>;
-  item: string;
-  subItems: SubItem[];
+  item?: string;
+  subItems?: SubItem[];
 }
 
 export interface ItemCmp {
@@ -35,6 +35,7 @@ export interface InputCmp {
   handleInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   validateStyle: (style: string) => string;
+  placeholder: string;
 }
 
 export interface SubItemsCmp {
@@ -70,7 +71,7 @@ export interface SubItem {
   label: string;
   subItems?: SubItem;
   subItem?: string | null;
-  icon: React.ComponentType<LucideProps>;
+  icon?: React.ComponentType<LucideProps>;
 }
 
 export interface SubItems {
@@ -99,7 +100,7 @@ export interface UseSmartFilterResult {
   selectItem: (item: Item, subItem?: SubItem) => void;
   selectItemFromUrl: (item: Item, subItem?: SubItem | { label: string; icon: React.ComponentType<LucideProps> }) => void;
   removeItem: (item: string, subItem?: string) => void;
-  getSubItems: (item: Item) => SubItem[];
+  // getSubItems: (item: Item) => SubItem[];
   showSubItems: Item | null;
   handleSelect: (item: Item) => void;
   resetSelectedItems: () => void;
@@ -109,11 +110,11 @@ export interface UseSmartFilterResult {
 interface SubItemProps {
   label: string;
   subItems?: SubItemProps;
-  subItem: string;
-  icon: React.ComponentType<LucideProps>;
+  subItem?: string;
+  icon?: React.ComponentType<LucideProps>;
 }
 
-interface SubItemsProps {
+export interface SubItemsProps {
   [key: string]: SubItemProps[];
 }
 
@@ -124,7 +125,7 @@ interface FetchFunctions {
 export interface StyleThemeProps {
   container?: string;
   inputContainer?: string;
-  dropdown: string;
+  dropdown?: string;
   dropdownItemContainer?: string;
   dropdownSubItemContainer?: string;
   selectedItems?: string;
@@ -151,5 +152,7 @@ export interface SmartFilteroProps {
   fetchFunctions: FetchFunctions;
   excludeSelected?: boolean;
   styleTheme?: StyleThemeProps;
-  getSelectedItems: (paramsObject: Record<string, string | null>) => void;
+  getSelectedItems: (items: { id: string; value: string }[]) => void;
+  withoutUrl?: boolean;
+  inputPlaceholder?: string;
 }

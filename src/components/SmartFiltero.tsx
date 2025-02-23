@@ -1,25 +1,25 @@
 import {Fragment, useCallback, useEffect, useRef, useState} from 'react';
 import {Type} from 'lucide-react';
 import {debounce} from 'lodash';
-import useSmartFilter from '@/hooks/useSmartFilter';
-import SelectedItem from '@/components/SelectedItem';
+import useSmartFilter from './../hooks/useSmartFilter';
+import SelectedItem from './../components/SelectedItem';
 import React from "react";
-import SelectedSubItem from "@/components/SelectedSubItem";
-import QueryItem from "@/components/QueryItem";
-import Items from "@/components/Items";
-import Item from "@/components/Item";
-import SubItems from "@/components/SubItems";
+import SelectedSubItem from "./../components/SelectedSubItem";
+import QueryItem from "./../components/QueryItem";
+import Items from "./../components/Items";
+import Item from "./../components/Item";
+import SubItems from "./../components/SubItems";
 import {
   SmartFilteroProps,
   Item as ItemProps,
   SubItem as SubItemProps,
   StyleThemeProps
 } from "@/types";
-import SelectedText from "@/components/SelectedText";
+import SelectedText from "./../components/SelectedText";
 import {X} from "lucide-react";
-import {transformLabelToQueryParam, updateURLParams} from "@/utils/url";
-import styles from '@/styles.module.css';
-import Input from "@/components/Input";
+import {transformLabelToQueryParam, updateURLParams} from "./../utils/url";
+import styles from './../styles.module.css';
+import Input from "./../components/Input";
 
 const SmartFiltero: React.FC<SmartFilteroProps> = ({
   items,
@@ -28,7 +28,9 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   fetchFunctions,
   excludeSelected = true,
   styleTheme = {},
-  getSelectedItems
+  getSelectedItems,
+  withoutUrl = false,
+  inputPlaceholder = 'Search or filter by...'
 }) => {
   const {
     query,
@@ -131,6 +133,8 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     setIsFocused(true);  // Re-focus the dropdown when typing
   };
 
+  const collectionRef = useRef<{ id: string; value: string }[]>([]);
+
   const handleClickItem = (item: ItemProps, e: React.MouseEvent<HTMLLIElement>) => {
     e.preventDefault();
     handleSelect(item);
@@ -139,23 +143,45 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
 
   const handleClickSubItem = (subItem: SubItemProps, e: React.MouseEvent<HTMLLIElement>) => {
     e.preventDefault();
-    if (showSubItems) {
-      selectItem(showSubItems, subItem);
-      setQuery('');
+
+    if (!showSubItems) return;
+
+    // Create the new collection entry
+    const newItem = { id: showSubItems.id, value: subItem.label };
+
+    selectItem(showSubItems, subItem);
+
+
+    if (!withoutUrl) {
       updateURLParams({
         [transformLabelToQueryParam(showSubItems.id || '')]: subItem.label
       });
-
-      getSelectedItems({
-        [transformLabelToQueryParam(showSubItems.id || '')]: subItem.label
-      });
     }
+
+    // Update collection by adding the new item
+    collectionRef.current.push(newItem);
+
+    // Call getSelectedItems with the updated collection
+    getSelectedItems(collectionRef.current);
+
+    // Reset query after selection
+    setQuery('');
   };
 
   const handleClickSearchText = (e: React.MouseEvent<HTMLLIElement>) => {
     e.preventDefault();
+
+    // Add the search item to the selected collection
+    const searchItem = {
+      id: `search`,
+      value: query,
+    };
+
+    // Add searchItem to the previous collection
+    const updatedCollection = [...collectionRef.current, searchItem];
+
     handleSelect({
-      id: "search",
+      id: `search`,
       item: "Search",
       subItems: [],
       label: query,
@@ -164,30 +190,53 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     });
 
     setQuery('');
-    updateURLParams({
-      ['search']: query
-    });
-
-    getSelectedItems({
-      ['search']: query
-    });
-  }
-
-  const removeSingleItem = (item: ItemProps, subItemLabel?: string) => {
-    const queryParam = transformLabelToQueryParam(item.item);
-    if (subItemLabel) {
-      removeItem(item.item, subItemLabel);
-      removeURLParams(item.id || queryParam); // Use removeURLParams to remove the param
-      getSelectedItems({
-        [item.id || queryParam]: null
-      });
-    } else {
-      removeItem(item.item);
-      removeURLParams(item.id || queryParam); // Use removeURLParams to remove the param
-      getSelectedItems({
-        [item.id || queryParam]: null
+    if (!withoutUrl) {
+      updateURLParams({
+        ['search']: query
       });
     }
+
+
+    // Update getSelectedItems with the previous collection + the new search item
+    getSelectedItems(updatedCollection);
+
+    // Update the collection ref with the updated collection
+    collectionRef.current = updatedCollection;
+  }
+
+
+  const removeSingleItem = (item: ItemProps, subItemLabel?: string) => {
+    // Temp: Change the item.item
+    const queryParam = item.item ? transformLabelToQueryParam(item.item) : '';
+
+    // Determine the updated collection
+    let updatedCollection: any[] = [];
+
+    if (subItemLabel) {
+      // Handle subItem removal
+      removeItem(item.item || '', subItemLabel);
+      removeURLParams(item.id || queryParam); // Use removeURLParams to remove the param
+
+      // Remove the specific item from the collection
+      updatedCollection = collectionRef.current.filter(
+        (colItem) => colItem.id !== item.id || colItem.value !== subItemLabel
+      );
+    } else {
+      // Handle item removal
+      removeItem(item.item || '');
+      removeURLParams(item.id || queryParam); // Use removeURLParams to remove the param
+
+      // Remove the specific item from the collection
+      updatedCollection = collectionRef.current.filter(
+        (colItem) => colItem.id !== item.id
+      );
+    }
+
+    // Call getSelectedItems with the updated collection
+    getSelectedItems(updatedCollection);
+
+    // Update the collection ref with the updated collection
+    collectionRef.current = updatedCollection;
   };
 
   const removeAllItems = () => {
@@ -273,6 +322,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+
   }, [selectedItems]);
 
   const coreContainerProps = {
@@ -289,6 +339,11 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     removeItem: removeSingleItem,
   }
 
+  const hasSearchUrl = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasSearchParam = urlParams.has('search');
+    return !hasSearchParam && !collectionRef.current.some(item => item.id.startsWith('search'))
+  }
 
   return (
     <div className={`${validateStyle('container')} ${validateStyle('inputContainer')}`}>
@@ -318,19 +373,22 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
               handleInputFocus={handleInputFocus}
               handleInputChange={handleInputChange}
               validateStyle={validateStyle}
+              placeholder={selectedItems.length ? '' : inputPlaceholder}
             />
             {isFocused && isDropdownVisible && dropdownPosition && (
               <div className={validateStyle('dropdown')} style={{left: dropdownPosition.left}}>
                 {/* Query Item */}
-                <QueryItem {...coreContainerProps}>
-                  <Item
-                    label="Search for this text"
-                    icon={Type}
-                    onClick={(e) => handleClickSearchText(e)}
-                    validateStyle={validateStyle}
-                    isTyped
-                  />
-                </QueryItem>
+                {hasSearchUrl() && (
+                  <QueryItem {...coreContainerProps}>
+                    <Item
+                      label="Search for this text"
+                      icon={Type}
+                      onClick={(e) => handleClickSearchText(e)}
+                      validateStyle={validateStyle}
+                      isTyped
+                    />
+                  </QueryItem>
+                )}
 
                 {/* Items */}
                 <Items {...coreContainerProps}>
@@ -359,10 +417,10 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
                         />
                       ))
                       : (
-                        <p className={validateStyle('noItemsFound')}>No items found</p>
+                        <li className={validateStyle('noItemsFound')}>No items found</li>
                       )
                   ) : (
-                    <p className={validateStyle('loadItems')}>Loading...</p>
+                    <li className={validateStyle('loadItems')}>Loading...</li>
                   )}
                 </SubItems>
               </div>

@@ -39,7 +39,6 @@ const Template = (args: any) => {
   const removeItem = (item: any, subItemLabel: string) => {
     const updatedSubItems = item.subItems.filter((sub: any) => sub.label !== subItemLabel);
     setSelectedItem({ ...item, subItems: updatedSubItems });
-    console.log(`Removed: ${subItemLabel}`);
   };
 
   return selectedItem.subItems.length > 0 ? (

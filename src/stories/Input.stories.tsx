@@ -43,6 +43,9 @@ const Template = (args: any) => {
 
 export const Default: StoryObj<typeof Input> = {
   render: Template,
+  args:{
+    placeholder: "Search or filter...",
+  }
 };
 
 export const WithValue: StoryObj<typeof Input> = {
@@ -54,6 +57,9 @@ export const WithValue: StoryObj<typeof Input> = {
 
 export const FocusedState: StoryObj<typeof Input> = {
   render: Template,
+  args:{
+    placeholder: "Search or filter...",
+  },
   play: async ({canvasElement}) => {
     const input = canvasElement.querySelector("input");
     if (input) input.focus();

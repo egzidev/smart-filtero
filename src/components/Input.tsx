@@ -7,6 +7,7 @@ const Input: React.FC<InputCmp> = ({
   handleInputFocus,
   handleInputChange,
   validateStyle,
+  placeholder
 }) => (
   <div className={validateStyle('searchWrapper')}>
     <input
@@ -15,7 +16,7 @@ const Input: React.FC<InputCmp> = ({
       value={query}
       onFocus={handleInputFocus}
       onChange={handleInputChange}
-      placeholder="Search..."
+      placeholder={placeholder}
       className={validateStyle('searchInput')}
     />
   </div>

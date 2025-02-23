@@ -27,7 +27,6 @@ const Template = (args: any) => {
 
   const removeItem = () => {
     setSelectedItem(null);
-    console.log("Item removed");
   };
 
   return selectedItem ? (

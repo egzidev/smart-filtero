@@ -1,10 +1,10 @@
 import {useState} from 'react';
-import {Item, SelectedItem, SubItem, SubItems, UseSmartFilterResult} from "@/types";
+import {Item, SelectedItem, SubItem, SubItemsProps, UseSmartFilterResult} from "@/types";
 import {LucideProps} from "lucide-react";
 
 const useSmartFilter = (
   items: Item[],
-  subItems: SubItems,
+  subItems: SubItemsProps,
   excludeSelected: boolean = true
 ): UseSmartFilterResult => {
 
@@ -137,11 +137,12 @@ const useSmartFilter = (
     });
   };
 
-  const getSubItems = (item: Item) => {
+ //  TODO: review this TMP
+ /* const getSubItems = (item: Item) => {
     if(item.id && subItems[item.id])
       return subItems[item.id].filter(subItem => !isItemSelected(subItem));
     else return [];
-  };
+  };*/
 
   const handleSelect = (item: Item) => {
     selectItem(item);
@@ -167,7 +168,6 @@ const useSmartFilter = (
     selectItem,
     selectItemFromUrl,
     removeItem,
-    getSubItems,
     showSubItems,
     handleSelect,
     resetSelectedItems,
