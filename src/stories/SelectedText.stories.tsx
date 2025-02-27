@@ -13,8 +13,9 @@ export default {
   tags: ["autodocs"],
   args: {
     item: {
-      id: "1",
+      value: "1",
       item: "Selected Text",
+      label: "Show Sub Items",
       typed: true,
       subItems: [],
     },

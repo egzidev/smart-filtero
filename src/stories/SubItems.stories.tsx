@@ -14,19 +14,23 @@ export default {
   tags: ["autodocs"],
   args: {
     showSubItems: {
-      id: "1",
+      value: "1",
+      label: "Show Sub Items",
       item: "Status",
       typed: false,
       subItems: [
         {
+          value: "cancel",
           label: "Cancel",
           icon: CircleX
         },
         {
+          value: "in-progress",
           label: "In-progress",
           icon: Clock
         },
         {
+          value: "paid",
           label: "Paid",
           icon: CheckCircle
         },

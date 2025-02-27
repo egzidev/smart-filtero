@@ -1,9 +1,9 @@
-import React from "react";
+
 import {LucideProps} from "lucide-react";
 
 export interface Item {
-  id: string;
-  label?: string;
+  value: string;
+  label: string;
   isAsync?: boolean;
   typed?: boolean;
   icon?: React.ComponentType<LucideProps>;
@@ -68,6 +68,7 @@ export interface SelectedSubItemCmp {
 }
 
 export interface SubItem {
+  value: string;
   label: string;
   subItems?: SubItem;
   subItem?: string | null;
@@ -80,10 +81,10 @@ export interface SubItems {
 
 // Define types for selected items
 export interface SelectedItem {
-  id: string;
+  value: string;
   isAsync?: boolean;
   typed: boolean;
-  label?: string;
+  label: string;
   subItem?: string;
   icon?: React.ComponentType<LucideProps>;
   item: string;
@@ -108,6 +109,7 @@ export interface UseSmartFilterResult {
 }
 
 interface SubItemProps {
+  value: string;
   label: string;
   subItems?: SubItemProps;
   subItem?: string;
@@ -153,6 +155,7 @@ export interface SmartFilteroProps {
   excludeSelected?: boolean;
   styleTheme?: StyleThemeProps;
   getSelectedItems: (items: { id: string; value: string }[]) => void;
+  defaultSelectedItems?: { itemValue: string; subItemValue: string }[];
   withoutUrl?: boolean;
   inputPlaceholder?: string;
 }

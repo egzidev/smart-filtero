@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Meta, StoryObj } from "@storybook/react";
 import {Type} from "lucide-react";
 import Item from "../components/Item";
@@ -28,7 +28,7 @@ export const Typed: StoryObj<typeof Item> = {
     label: "Search for this text: ",
     isTyped: true,
     query: "Typed Query",
-    validateStyle: (style: string) => {
+    validateStyle: () => {
       return 'queryItem';
     },
   },

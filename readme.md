@@ -28,7 +28,7 @@ Here’s a step-by-step example of using SmartFiltero to create a filterable int
 Define the items you want to include in the filters:
 
 ```jsx
-import { User, Tag, CircleDollarSign, MapPin, CheckCircle, CircleX, Clock} from 'lucide-react';
+import { User, Tag, MapPin, CheckCircle, CircleX, Clock} from 'lucide-react';
 
 const items = [
     {id: 'customer_username', label: 'Customer',  icon: User},
@@ -64,7 +64,7 @@ const subItems = {
 Integrate the `SmartFiltero` component in your React component:
 
 ```jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import SmartFiltero from 'smart-filtero';
 import 'smart-filtero/dist/smart-filtero.css';
 

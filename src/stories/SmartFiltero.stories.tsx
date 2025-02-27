@@ -1,52 +1,44 @@
-import React, { useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Meta, StoryFn} from '@storybook/react';
 import SmartFiltero from "./../components/SmartFiltero";
 import {SmartFilteroProps} from '@/types';
-import {User, Tag, CircleDollarSign, MapPin, CircleX, Clock, CheckCircle, LucideBanknote} from 'lucide-react';
+import {User, Tag, MapPin, CircleX, Clock, CheckCircle, LucideBanknote} from 'lucide-react';
 import './style.css';
 
 export default {
   title: 'Smart Filtero',
   component: SmartFiltero,
+  tags: ["autodocs"],
 } as Meta;
 
 const items = [
-  {id: 'customer_username', label: 'Customer', icon: User, isAsync: true},
-  {id: 'investor_username', label: 'Investor', icon: LucideBanknote, isAsync: true},
-  {id: 'status', label: 'Status', icon: Tag},
-  {id: 'total', label: 'Total', icon: CircleDollarSign},
-  {id: 'city', label: 'City', icon: MapPin},
+  {value: 'customer_username', label: 'Customer', icon: User, isAsync: true},
+  {value: 'investor_username', label: 'Investor', icon: LucideBanknote, isAsync: true},
+  {value: 'status', label: 'Status', icon: Tag},
+  {value: 'city', label: 'City', icon: MapPin},
 ];
 
 const staticSubItems = {
   status: [
-    {label: 'Canceled', icon: CircleX},
-    {label: 'In-progress', icon: Clock},
-    {label: 'Paid', icon: CheckCircle},
-  ],
-  total: [
-    {label: 'Less than $100', min: 0, max: 100},
-    {label: '$100 - $200', min: 100, max: 200},
-    {label: '$200 - $300', min: 200, max: 300},
-    {label: '$300 - $400', min: 300, max: 400},
-    {label: '$400 - $500', min: 400, max: 500},
-    {label: 'More than $500', min: 500, max: Infinity},
+    {value: 'cancel', label: 'Canceled', icon: CircleX},
+    {value: 'in-progress', label: 'In-progress', icon: Clock},
+    {value: 'paid', label: 'Paid', icon: CheckCircle},
   ],
   city: [
-    {label: 'New York'},
-    {label: 'Los Angeles'},
-    {label: 'Chicago'},
-    {label: 'Houston'},
-    {label: 'Phoenix'},
-    {label: 'Philadelphia'},
-    {label: 'San Antonio'},
-    {label: 'San Diego'},
-    {label: 'Dallas'},
-    {label: 'San Jose'},
-    {label: 'Austin'},
-    {label: 'Jacksonville'},
-    {label: 'Fort Worth'},
-    {label: 'Columbus'},
+    {value: 'new_york', label: 'New York'},
+    {value: 'los_angeles', label: 'Los Angeles'},
+    {value: 'chicago', label: 'Chicago'},
+    {value: 'houston', label: 'Houston'},
+    {value: 'phoenix', label: 'Phoenix'},
+    {value: 'philadelphia', label: 'Philadelphia'},
+    {value: 'san_antonio', label: 'San Antonio'},
+    {value: 'san_diego', label: 'San Diego'},
+    {value: 'dallas', label: 'Dallas'},
+    {value: 'san_jose', label: 'San Jose'},
+    {value: 'austin', label: 'Austin'},
+    {value: 'jacksonville', label: 'Jacksonville'},
+    {value: 'fort_worth', label: 'Fort Worth'},
+    {value: 'columbus', label: 'Columbus'},
   ]
 };
 
@@ -54,28 +46,34 @@ const staticSubItems = {
 const fetchCustomers = async (query = '') => {
   const response = await fetch(`https://jsonplaceholder.typicode.com/users${query ? `?name_like=${query}` : ''}`);
   const data = await response.json();
-  return data.map((user: { name: string, icon: any }) => ({
+  return data.map((user: { username: string, name: string, icon: any }) => ({
+    value: user.username,
     label: user.name,
     icon: User,
   }));
 };
-
-// Function to get URL search parameters and convert them to selected items
-const getSelectedItemsFromURL = () => {
-  const params = new URLSearchParams(window.location.search);
-
-  // Remove unwanted keys
-  ["viewMode", "id", "globals"].forEach((key) => params.delete(key));
-
-  return Array.from(params.toString())
-};
-
 
 const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [investors, setInvestors] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [fetching, setFetching] = useState(false);
+
+  const [searchParams, setSearchParams] = useState(window.location.search);
+
+  useEffect(() => {
+    const handleUrlChange = () => setSearchParams(window.location.search);
+
+    window.addEventListener('popstate', handleUrlChange); // Listen for back/forward events
+    return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
+
+  const getSelectedItemsFromURL = useMemo(() => {
+    const params = new URLSearchParams(searchParams);
+    ["viewMode", "id", "globals", "args"].forEach((key) => params.delete(key));
+    console.log('params:', params.toString()  );
+    return Array.from(params.toString());
+  }, [searchParams]);
 
   const loadInvestors = async (query = '') => {
     setFetching(true);
@@ -130,7 +128,7 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
       <div className="selected-items">
         <h3>Selected Items</h3>
         <pre>{JSON.stringify(selectedItems, null, 2)}</pre>
-        <pre>Url: {getSelectedItemsFromURL()}</pre>
+        <pre>URL Params: {getSelectedItemsFromURL}</pre>
       </div>
     </div>
   );
@@ -160,4 +158,14 @@ WithoutUrl.args = {
   subItems: staticSubItems,
   fetching: false,
   withoutUrl: true,
+};
+
+// with defaultSelectedItems
+export const WithDefaultSelectedItems = AsyncTemplate.bind({});
+WithDefaultSelectedItems.args = {
+  items,
+  subItems: staticSubItems,
+  defaultSelectedItems: [
+    {itemValue: 'city', subItemValue: 'new_york'},
+  ],
 };

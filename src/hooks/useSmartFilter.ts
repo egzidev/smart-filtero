@@ -5,31 +5,33 @@ import {LucideProps} from "lucide-react";
 const useSmartFilter = (
   items: Item[],
   subItems: SubItemsProps,
-  excludeSelected: boolean = true
+  excludeSelected: boolean = true,
 ): UseSmartFilterResult => {
 
   const [query, setQuery] = useState<string>('');
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [showSubItems, setShowSubItems] = useState<Item | null>(null);
 
+
   // const isItemSelected = (item: SubItem) => selectedItems.some(selected => selected.subItems.includes(item.label));
   const isItemSelected = (item: SubItem) => selectedItems.some(selected =>
-    selected.subItems.some(sub => sub.label === item.label)
+    selected.subItems.some(sub => sub.value === item.value)
   );
+
   /*const areAllSubItemsSelected = (item: Item) => {
     if (!subItems[item.label]) return false;
     return subItems[item.label].every(subItem => isItemSelected(subItem));
   };*/
 
   const filteredItems = items.filter(item =>
-    item.label?.toLowerCase().includes(query.toLowerCase()) &&
-    (!excludeSelected || (!selectedItems.some(selected => selected.item === item.label)))
+    item.value?.toLowerCase().includes(query.toLowerCase()) &&
+    (!excludeSelected || (!selectedItems.some(selected => selected.item === item.value)))
   );
 
-  const subItemsCollector = subItems[showSubItems?.id ?? ''] || [];
+  const subItemsCollector = subItems[showSubItems?.value ?? ''] || [];
 
   const filteredSubItems = subItemsCollector.filter(subItem =>
-    subItem.label.toLowerCase().includes(query.toLowerCase()) && !isItemSelected(subItem)
+    subItem.value.toLowerCase().includes(query.toLowerCase()) && !isItemSelected(subItem)
   );
 
   const selectItem = (item: Item, subItem?: SubItem) => {
@@ -46,8 +48,9 @@ const useSmartFilter = (
       }));
     } else {
 
+      // @ts-ignore
       const newItem: SelectedItem = {
-        id: item.id,
+        value: item.value,
         item: item.label ?? '',
         subItems: [],
         isAsync: item.isAsync ?? false,
@@ -64,22 +67,24 @@ const useSmartFilter = (
   };
 
   const selectItemFromUrl = (item: Item, subItem?: SubItem | { label: string; icon: React.ComponentType<LucideProps> }) => {
+    // @ts-ignore
     setSelectedItems(prevSelectedItems => {
       const existingItemIndex = prevSelectedItems.findIndex(
-        selectedItem => selectedItem.id === item.id
+        selectedItem => selectedItem.value === item.value
       );
 
       if (existingItemIndex !== -1) {
         // If the item already exists, add the sub-item to its subItems array
         const updatedItem = {
           ...prevSelectedItems[existingItemIndex],
-          subItems: [
+          subItems: prevSelectedItems[existingItemIndex] ? [
             ...prevSelectedItems[existingItemIndex].subItems,
-          ],
+          ] : [],
         };
 
         // Update the existing item in the selectedItems array
         const updatedSelectedItems = [...prevSelectedItems];
+        // @ts-ignore
         updatedSelectedItems[existingItemIndex] = updatedItem;
 
 
@@ -87,12 +92,13 @@ const useSmartFilter = (
       } else {
         // If the item does not exist, add it as a new item with the sub-item
         const newItem = {
-          id: item.id,
+          id: item.value,
           item: item.label ?? '',
           subItems: subItem ? [subItem] : [],
           isAsync: item.isAsync ?? false,
           typed: item.typed ?? false,
         };
+
         return newItem ? [...prevSelectedItems, newItem] : prevSelectedItems;
       }
     });
@@ -104,17 +110,17 @@ const useSmartFilter = (
   };
 
 
-  const removeItem = (item: string, subItemLabel?: string) => {
+  const removeItem = (item: string, subItemValue?: string) => {
     setSelectedItems(prevSelectedItems => {
       // Filter out null values and handle sub-item removal
       return prevSelectedItems.reduce<SelectedItem[]>((accumulator, selectedItem) => {
         if (!selectedItem) return accumulator; // Skip null or undefined items
 
         if (selectedItem.item === item) {
-          if (subItemLabel) {
-            // Filter out the specific subItem based on label using reduce
+          if (subItemValue) {
+            // Filter out the specific subItem based on value using reduce
             const filteredSubItems = selectedItem.subItems.reduce<SubItem[]>((subAccumulator, subItem) => {
-              if (subItem.label !== subItemLabel) {
+              if (subItem.value !== subItemValue) {
                 subAccumulator.push(subItem);
               }
               return subAccumulator;
@@ -137,12 +143,12 @@ const useSmartFilter = (
     });
   };
 
- //  TODO: review this TMP
- /* const getSubItems = (item: Item) => {
-    if(item.id && subItems[item.id])
-      return subItems[item.id].filter(subItem => !isItemSelected(subItem));
-    else return [];
-  };*/
+  //  TODO: review this TMP
+  /* const getSubItems = (item: Item) => {
+     if(item.id && subItems[item.id])
+       return subItems[item.id].filter(subItem => !isItemSelected(subItem));
+     else return [];
+   };*/
 
   const handleSelect = (item: Item) => {
     selectItem(item);
