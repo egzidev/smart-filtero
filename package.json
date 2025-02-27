@@ -1,6 +1,6 @@
 {
   "name": "smart-filtero",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "type": "module",
   "description": "This is an NPM package that filters out the data based on the given conditions",
   "main": "dist/index.ts",
