@@ -1,14 +1,14 @@
-import React from "react";
+
 import {LucideProps} from "lucide-react";
 
 export interface Item {
-  id: string;
-  label?: string;
+  value: string;
+  label: string;
   isAsync?: boolean;
   typed?: boolean;
   icon?: React.ComponentType<LucideProps>;
-  item: string;
-  subItems: SubItem[];
+  item?: string;
+  subItems?: SubItem[];
 }
 
 export interface ItemCmp {
@@ -22,17 +22,27 @@ export interface ItemCmp {
 
 export interface ItemsCmp {
   isFocused: boolean;
-  query: string;
   showSubItems: Item | null;
   fetching: boolean;
   filteredItemsLength: boolean;
   children: React.ReactNode;
+  validateStyle: (style: string) => string;
+}
+
+export interface InputCmp {
+  inputRef: React.RefObject<HTMLInputElement>;
+  query: string;
+  handleInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  validateStyle: (style: string) => string;
+  placeholder: string;
 }
 
 export interface SubItemsCmp {
   showSubItems: Item | null;
   isFocused: boolean;
   children: React.ReactNode;
+  validateStyle: (style: string) => string;
 }
 
 export interface QueryItemCmp {
@@ -40,6 +50,7 @@ export interface QueryItemCmp {
   showSubItems: Item | null;
   isFocused: boolean;
   children: React.ReactNode;
+  validateStyle: (style: string) => string;
 }
 
 
@@ -57,10 +68,11 @@ export interface SelectedSubItemCmp {
 }
 
 export interface SubItem {
+  value: string;
   label: string;
   subItems?: SubItem;
   subItem?: string | null;
-  icon: React.ComponentType<LucideProps>;
+  icon?: React.ComponentType<LucideProps>;
 }
 
 export interface SubItems {
@@ -69,10 +81,10 @@ export interface SubItems {
 
 // Define types for selected items
 export interface SelectedItem {
-  id: string;
+  value: string;
   isAsync?: boolean;
   typed: boolean;
-  label?: string;
+  label: string;
   subItem?: string;
   icon?: React.ComponentType<LucideProps>;
   item: string;
@@ -89,7 +101,7 @@ export interface UseSmartFilterResult {
   selectItem: (item: Item, subItem?: SubItem) => void;
   selectItemFromUrl: (item: Item, subItem?: SubItem | { label: string; icon: React.ComponentType<LucideProps> }) => void;
   removeItem: (item: string, subItem?: string) => void;
-  getSubItems: (item: Item) => SubItem[];
+  // getSubItems: (item: Item) => SubItem[];
   showSubItems: Item | null;
   handleSelect: (item: Item) => void;
   resetSelectedItems: () => void;
@@ -97,13 +109,14 @@ export interface UseSmartFilterResult {
 }
 
 interface SubItemProps {
+  value: string;
   label: string;
   subItems?: SubItemProps;
-  subItem: string;
-  icon: React.ComponentType<LucideProps>;
+  subItem?: string;
+  icon?: React.ComponentType<LucideProps>;
 }
 
-interface SubItemsProps {
+export interface SubItemsProps {
   [key: string]: SubItemProps[];
 }
 
@@ -114,7 +127,7 @@ interface FetchFunctions {
 export interface StyleThemeProps {
   container?: string;
   inputContainer?: string;
-  dropdown: string;
+  dropdown?: string;
   dropdownItemContainer?: string;
   dropdownSubItemContainer?: string;
   selectedItems?: string;
@@ -141,5 +154,8 @@ export interface SmartFilteroProps {
   fetchFunctions: FetchFunctions;
   excludeSelected?: boolean;
   styleTheme?: StyleThemeProps;
-  getSelectedItems: (paramsObject: Record<string, string | null>) => void;
+  getSelectedItems: (items: { id: string; value: string }[]) => void;
+  defaultSelectedItems?: { itemValue: string; subItemValue: string }[];
+  withoutUrl?: boolean;
+  inputPlaceholder?: string;
 }

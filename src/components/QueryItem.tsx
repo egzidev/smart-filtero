@@ -1,4 +1,3 @@
-import styles from "@/styles.module.css";
 import React from "react";
 import {QueryItemCmp} from "@/types";
 
@@ -6,14 +5,15 @@ const QueryItem: React.FC<QueryItemCmp> = ({
   query,
   showSubItems,
   isFocused,
-  children
+  children,
+  validateStyle
 }) => {
   return (
     query
     && !showSubItems
     && isFocused
     && (
-      <ul className={styles.dropdownItemContainer}>
+      <ul className={validateStyle('dropdownItemContainer')}>
         {children}
       </ul>
     )

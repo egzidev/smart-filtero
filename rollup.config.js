@@ -8,7 +8,7 @@ const { terser } = require('rollup-plugin-terser');
 const devMode = process.env.NODE_ENV === 'development';
 
 module.exports = {
-  input: 'src/index.js',
+  input: 'src/index.ts',
   output: {
     file: 'dist/index.js',
     format: 'es',
@@ -31,6 +31,7 @@ module.exports = {
       modules: true, // Enable CSS Modules
       extract: true, // Extract to a CSS file
       minimize: !devMode, // Minify in production mode
+
     }),
     terser({
       ecma: 2020,

@@ -1,4 +1,3 @@
-import styles from "@/styles.module.css";
 import React from "react";
 import {ItemsCmp} from "@/types";
 
@@ -8,6 +7,7 @@ const Items: React.FC<ItemsCmp> = ({
   fetching,
   filteredItemsLength,
   children,
+  validateStyle
 }) => {
   return (
     isFocused
@@ -15,7 +15,7 @@ const Items: React.FC<ItemsCmp> = ({
     && !fetching
     && filteredItemsLength
     && (
-      <ul className={styles.dropdownItemContainer}> {children} </ul>
+      <ul className={validateStyle('dropdownItemContainer')}> {children} </ul>
     )
   )
 }

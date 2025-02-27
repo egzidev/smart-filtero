@@ -1,4 +1,6 @@
+smart-filter*.tgz
+node_modules
 src
 rollup.config.js
-.vscode
-smart-filter*.tgz
+tsconfig.json
+.gitignore
