@@ -1,3 +1,5 @@
+
+
 .container {
     width: 100%;
     margin-left: auto;
@@ -7,23 +9,26 @@
 .inputContainer {
     display: flex;
     gap: 0.5rem;
-    border: 1px solid #d1d5dc;
+    border: 1px solid var(--border-color);
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
     position: relative;
 }
 
-.selectedItems {
+.selectedItemsContainer {
     display: inline-flex;
-    /*flex-wrap: nowrap;*/
-    /*align-items: center;*/
+}
+
+.selectedItemsWrapper {
+    display: inline-flex;
+    align-items: center;
 }
 
 .selectedItem {
     display: flex;
     align-items: center;
-    background-color: #edf2f7;
-    color: #2d3748;
+    background-color: var(--item-bg);
+    color: var(--item-text);
     padding: 0.25rem 0.5rem;
     margin-right: 0.25rem;
     border-radius: 0.25rem;
@@ -34,8 +39,8 @@
 .selectedSubItem, .selectedText {
     display: inline-flex;
     align-items: center;
-    background-color: #e0e5ea;
-    color: #2d3748;
+    background-color: var(--subitem-bg);
+    color: var(--item-text);
     padding: 0.25rem 0.5rem;
     margin-right: 0.25rem;
     border-radius: 0.25rem;
@@ -43,10 +48,13 @@
     white-space: nowrap;
 }
 
+.selectedSubItemIcon {
+    margin-right: 0.25rem;
+}
+
 .removeIcon {
     margin-left: 0.25rem;
     cursor: pointer;
-    /*padding: 0.25rem;*/
 }
 
 .searchInput {
@@ -60,9 +68,10 @@
     outline-offset: 2px;
     height: 1.75rem;
     width: 100%;
+    color: var(--text-color);
 }
 
-.dropdown {
+.dropdownContainer {
     position: absolute;
     margin-top: 5px;
     top: 100%;
@@ -71,10 +80,10 @@
 }
 
 .dropdownItemContainer, .dropdownSubItemContainer {
-    border: 1px solid #cbd5e0;
+    border: 1px solid var(--dropdown-border);
     border-radius: 0.5rem;
     margin-bottom: 0.5rem;
-    background: white;
+    background: var(--dropdown-bg);
     filter: drop-shadow(0 10px 8px rgb(0 0 0 / .04)) drop-shadow(0 4px 3px rgb(0 0 0 / .1));
     overflow: auto;
     max-height: 15rem;
@@ -87,26 +96,26 @@
     align-items: center;
     gap: 0.5rem;
     font-size: 14px;
-    color: #404040;
+    color: var(--text-color);
 }
 
 .queryItem:hover, .dropdownItem:hover {
-    background-color: #edf2f7;
+    background-color: var(--dropdown-hover-bg);
 }
 
 .noItemsFound, .loadItems {
     padding: 0.5rem 0.75rem;
     font-size: 14px;
-    color: #404040;
+    color: var(--text-color);
 }
 
 .clearFilterButton {
     padding: 0.25rem 0.25rem;
     cursor: pointer;
     font-size: 14px;
-    color: #2d3748;
+    color: var(--item-text);
     border-radius: 99px;
-    background-color: #edf2f7;
+    background-color: var(--clear-btn-bg);
 }
 
 .scrollableContainerWithButton {

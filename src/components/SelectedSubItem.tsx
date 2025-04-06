@@ -7,11 +7,28 @@ const SelectedSubItem: React.FC<SelectedSubItemCmp> = ({
   removeItem,
   validateStyle,
 }) => {
+
+  const getIcon = (
+    icon: React.ComponentType<any> | React.ReactElement
+  ) => {
+    if (React.isValidElement(icon)) {
+      return icon;
+    }
+    const Icon = icon as React.ComponentType<any>;
+    return <Icon size={14} />;
+  };
+
+
   return (
     item.subItems &&
     item.subItems.length > 0 &&
     item.subItems.map((subItem, idx) => (
       <div key={`${subItem}-${idx}`} className={validateStyle('selectedSubItem')}>
+        {subItem.icon && (
+          <div className={validateStyle('selectedSubItemIcon')}>
+            {getIcon(subItem.icon)}
+          </div>
+        )}
         <span>{subItem.label}</span>
         <div
           className={validateStyle('removeIcon')}

@@ -1,73 +1,86 @@
 import {Fragment, useCallback, useEffect, useRef, useState} from 'react';
 import {Type} from 'lucide-react';
-import {debounce} from 'lodash';
-import useSmartFilter from '@/hooks/useSmartFilter';
-import SelectedItem from '@/components/SelectedItem';
+import useSmartFilter from './../hooks/useSmartFilter';
+import SelectedItem from './../components/SelectedItem';
 import React from "react";
-import SelectedSubItem from "@/components/SelectedSubItem";
-import QueryItem from "@/components/QueryItem";
-import Items from "@/components/Items";
-import Item from "@/components/Item";
-import SubItems from "@/components/SubItems";
+import SelectedSubItem from "./../components/SelectedSubItem";
+import QueryItem from "./../components/QueryItem";
+import Items from "./../components/Items";
+import Item from "./../components/Item";
+import SubItems from "./../components/SubItems";
 import {
   SmartFilteroProps,
   Item as ItemProps,
   SubItem as SubItemProps,
   StyleThemeProps
-} from "@/types";
-import SelectedText from "@/components/SelectedText";
+} from "./../types";
+import SelectedText from "./../components/SelectedText";
 import {X} from "lucide-react";
-import {transformLabelToQueryParam, updateURLParams} from "@/utils/url";
-import styles from '@/styles.module.css';
-import Input from "@/components/Input";
+import {transformLabelToQueryParam, updateURLParams} from "./../utils/url";
+import "./../theme.css";
+import styles from './../styles.module.css';
+import Input from "./../components/Input";
+import useAsync from "./../hooks/useAsync";
+import useUpdateEffect from "./../hooks/useUpdateEffect";
 
 const SmartFiltero: React.FC<SmartFilteroProps> = ({
   items,
   subItems,
-  fetching,
   fetchFunctions,
   excludeSelected = true,
   styleTheme = {},
   getSelectedItems,
+  withUrl = false,
+  inputPlaceholder = 'Search or filter by...',
+  searchItem = {
+    label: 'Search for this text',
+    icon: Type,
+  },
+  defaultQuery = '',
+  defaultSelectedQuery = '',
   defaultSelectedItems = [],
-  withoutUrl = false,
-  inputPlaceholder = 'Search or filter by...'
+  debounceDelay = 500,
+  noResultsText = "No results found",
+  loadingText = "Loading...",
 }) => {
   const {
+    // states
     query,
-    setQuery,
     filteredItems,
     filteredSubItems,
     selectedItems,
+    showSubItems,
+    // functions
+    setQuery,
     selectItem,
     selectItemFromUrl,
     removeItem,
-    showSubItems,
     handleSelect,
     resetSelectedItems,
     resetSubItems
   } = useSmartFilter(items, subItems, excludeSelected);
 
+  const {
+    // states
+    isLoading,
+    isSearching,
+    hasResults,
+    fetchDebounceOnQuery,
+    // functions
+    fetchInitial,
+    setIsSearching,
+    setHasResults,
+  } = useAsync(subItems, debounceDelay, fetchFunctions);
+
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevLengthRef = useRef(selectedItems.length);
   const scrollableRef = useRef<HTMLDivElement>(null);
+  const collectionRef = useRef<{ id: string; value: string }[]>([]);
 
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ left: number } | null>(null);
   const [isDropdownVisible, setIsDropdownVisible] = useState<boolean>(false);
-
-  const fetchDebounceOnQuery = debounce((item: ItemProps, query: string) => {
-    if (item.value && fetchFunctions[item.value]) {
-      fetchFunctions[item.value]?.(query);
-    }
-  }, 500);
-
-  const fetchDebounceDefault = debounce((item: ItemProps) => {
-    if (item.value && fetchFunctions[item.value]) {
-      fetchFunctions[item.value]?.();
-    }
-  }, 500);
 
   const recalculatePosition = useCallback((): Promise<void> => {
     return new Promise((resolve) => {
@@ -132,9 +145,28 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     const newQuery = e.target.value;
     setQuery(newQuery);
     setIsFocused(true);  // Re-focus the dropdown when typing
-  };
 
-  const collectionRef = useRef<{ id: string; value: string }[]>([]);
+    if (showSubItems?.isAsync) {
+      // Check if there are matching subitems first
+      const hasMatchingSubItems = filteredSubItems.some((subItem: any) =>
+        subItem.label.toLowerCase().includes(newQuery.toLowerCase())
+      );
+
+      const isDeleting = newQuery.length < query.length; // Detect backspace
+
+      // Fetch only if there are no matches OR if deleting characters
+      if (!hasMatchingSubItems || isDeleting) {
+        setIsSearching(true);
+
+        fetchDebounceOnQuery(showSubItems, newQuery, (response) => {
+          setHasResults(response.length > 0);
+          setIsSearching(false);
+        });
+      } else {
+        setHasResults(true); // We have matches locally
+      }
+    }
+  };
 
   const handleClickItem = (item: ItemProps, e: React.MouseEvent<HTMLLIElement>) => {
     e.preventDefault();
@@ -152,7 +184,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
 
     selectItem(showSubItems, subItem);
 
-    if (!withoutUrl) {
+    if (withUrl) {
       updateURLParams({
         [transformLabelToQueryParam(showSubItems.value || '')]: subItem.value
       });
@@ -168,13 +200,15 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     setQuery('');
   };
 
-  const handleClickSearchText = (e: React.MouseEvent<HTMLLIElement>) => {
-    e.preventDefault();
+  const handleSearchItem = (type: 'click' | 'default', e?: React.MouseEvent<HTMLLIElement>) => {
+    if (e) e.preventDefault();
 
-    // Add the search item to the selected collection
+    // Determine the label based on the type
+    const label = type === 'click' ? query : defaultSelectedQuery;
+
     const searchItem = {
       id: `search`,
-      value: query,
+      value: label,
     };
 
     // Add searchItem to the previous collection
@@ -184,16 +218,15 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
       value: `search`,
       item: "Search",
       subItems: [],
-      label: query,
+      label,
       icon: Type,
-      typed: true
+      typed: true,
     });
 
     setQuery('');
-    if (!withoutUrl) {
-      updateURLParams({
-        ['search']: query
-      });
+
+    if (withUrl) {
+      updateURLParams({['search']: query});
     }
 
     // Update getSelectedItems with the previous collection + the new search item
@@ -201,7 +234,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
 
     // Update the collection ref with the updated collection
     collectionRef.current = updatedCollection;
-  }
+  };
 
   const removeSingleItem = (item: ItemProps, subItemValue?: string) => {
     // Temp: Change the item.item
@@ -212,8 +245,9 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     if (subItemValue) {
       // Handle subItem removal
       removeItem(item.item || '', subItemValue);
-      removeURLParams(item.value || queryParam); // Use removeURLParams to remove the param
-
+      if (withUrl) {
+        removeURLParams(item.value || queryParam); // Use removeURLParams to remove the param
+      }
       // Remove the specific item from the collection
       updatedCollection = collectionRef.current.filter(
         (colItem) => colItem.id !== item.value || colItem.value !== subItemValue
@@ -221,8 +255,9 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     } else {
       // Handle item removal
       removeItem(item.item || '');
-      removeURLParams(item.value || queryParam); // Use removeURLParams to remove the param
-
+      if (withUrl) {
+        removeURLParams(item.value || queryParam); // Use removeURLParams to remove the param
+      }
       // Remove the specific item from the collection
       updatedCollection = collectionRef.current.filter(
         (colItem) => colItem.id !== item.value
@@ -258,69 +293,89 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   };
 
   useEffect(() => {
-    if (showSubItems && showSubItems.isAsync) {
-      fetchDebounceDefault(showSubItems);
+    if (defaultQuery && defaultSelectedQuery) {
+      console.error("You can only provide either `defaultQuery` or `defaultSelectedQuery`, not both.");
+    }
+
+    if (defaultQuery && !selectedItems.length && !defaultSelectedQuery) {
+      setQuery(defaultQuery);
+    }
+
+    if (defaultSelectedQuery && !selectedItems.length && !defaultQuery) {
+      handleSearchItem('default')
+    }
+
+    return () => {
+      resetSelectedItems();
+    }
+  }, [])
+
+  useUpdateEffect(() => {
+    if (showSubItems?.isAsync) {
+      fetchInitial(showSubItems);
     }
   }, [showSubItems]);
 
   useEffect(() => {
-    if (showSubItems?.isAsync && query) {
-      fetchDebounceOnQuery(showSubItems, query);
-    }
-  }, [showSubItems, query, selectedItems]);
+    if (withUrl) {
+      const params = new URLSearchParams(window.location.search);
+      const allParams: Record<string, string> = {};
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const allParams: Record<string, string> = {};
-
-    const urlQuery = params.get('query');
-    if (urlQuery) {
-      setQuery(urlQuery);
-    }
-
-    params.forEach((value, key) => {
-      allParams[key] = value;
-
-      // Find the matching item in items array by value
-      const selectedItem = items.find(item => item.value === key);
-      if (allParams.search) {
-        selectItemFromUrl({
-          value: "search",
-          item: "Search",
-          subItems: [],
-          label: allParams.search,
-          icon: Type,
-          typed: true
-        });
+      const urlQuery = params.get('query');
+      if (urlQuery) {
+        setQuery(urlQuery);
       }
 
-      if (selectedItem) {
-        selectItemFromUrl(selectedItem, {
-          label: value,
-          icon: selectedItem.icon || Type,
-        });
-      }
-    });
+      params.forEach((value, key) => {
+        allParams[key] = value;
+
+        // Find the matching item in items array by value
+        const selectedItem = items.find(item => item.value === key);
+        if (allParams.search) {
+          selectItemFromUrl({
+            value: "search",
+            item: "Search",
+            subItems: [],
+            label: allParams.search,
+            icon: Type,
+            typed: true
+          });
+        }
+
+        if (selectedItem) {
+          selectItemFromUrl(selectedItem, {
+            label: value,
+            icon: selectedItem.icon ?? null,
+          });
+        }
+      });
+    }
   }, [])
 
 
   useEffect(() => {
     defaultSelectedItems.map(defaultSelectedItem => {
-      console.log('defaultSelectedItem', defaultSelectedItem)
       const selectedItem = items.find(i => i.value === defaultSelectedItem.itemValue);
-      // @ts-ignore
       const selectedSubItem = subItems[defaultSelectedItem.itemValue].find(i => i.value === defaultSelectedItem.subItemValue);
 
       if (selectedItem && selectedSubItem) {
-        updateURLParams({
-          [transformLabelToQueryParam(defaultSelectedItem.itemValue)]: selectedSubItem.label
-        });
-        selectItemFromUrl(selectedItem, {
-          value: defaultSelectedItem.itemValue,
-          label: selectedSubItem.label,
-          icon: selectedItem.icon || Type,
-        });
-        // }
+        if (withUrl) {
+          selectItemFromUrl(selectedItem, {
+            value: defaultSelectedItem.itemValue,
+            label: selectedSubItem.label,
+            icon: selectedItem.icon ?? null,
+          });
+
+          updateURLParams({
+            [transformLabelToQueryParam(defaultSelectedItem.itemValue)]: selectedSubItem.label
+          });
+        } else {
+          selectItemFromUrl(selectedItem, {
+            value: defaultSelectedItem.itemValue,
+            label: selectedSubItem.label,
+            icon: selectedItem.icon ?? null,
+          });
+        }
       }
     })
   }, [])
@@ -347,7 +402,6 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   const coreContainerProps = {
     query,
     showSubItems,
-    fetching,
     isFocused,
     filteredItemsLength: filteredItems.length > 0,
     validateStyle,
@@ -369,16 +423,16 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
       <div className={validateStyle('scrollableContainerWithButton')}>
         <div ref={scrollableRef} className={validateStyle('scrollable')}>
           {selectedItems.length > 0 && (
-            <div className={validateStyle('selectedItems')}>
+            <div className={validateStyle('selectedItemsContainer')}>
               {selectedItems.map((item, idX) => (
                 <Fragment key={`${idX}-${item.label}`}>
                   {item.value === 'search' ? (
                     <SelectedText {...coreSelectedProps} item={item}/>
                   ) : (
-                    <>
+                    <div className={validateStyle('selectedItemsWrapper')}>
                       <SelectedItem {...coreSelectedProps} item={item}/>
                       <SelectedSubItem {...coreSelectedProps} item={item}/>
-                    </>
+                    </div>
                   )}
                 </Fragment>
               ))}
@@ -395,14 +449,14 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
               placeholder={selectedItems.length ? '' : inputPlaceholder}
             />
             {isFocused && isDropdownVisible && dropdownPosition && (
-              <div className={validateStyle('dropdown')} style={{left: dropdownPosition.left}}>
+              <div className={validateStyle('dropdownContainer')} style={{left: dropdownPosition.left}}>
                 {/* Query Item */}
                 {hasSearchUrl() && (
                   <QueryItem {...coreContainerProps}>
                     <Item
-                      label="Search for this text"
-                      icon={Type}
-                      onClick={(e) => handleClickSearchText(e)}
+                      label={searchItem.label}
+                      icon={searchItem.icon}
+                      onClick={(e) => handleSearchItem('click', e)}
                       validateStyle={validateStyle}
                       isTyped
                     />
@@ -410,7 +464,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
                 )}
 
                 {/* Items */}
-                <Items {...coreContainerProps}>
+                <Items {...coreContainerProps} isLoading={isLoading}>
                   {filteredItems.map((item, idX) => (
                     <Item
                       key={`${idX}-${item.label}`}
@@ -424,22 +478,20 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
 
                 {/* Sub items */}
                 <SubItems {...coreContainerProps}>
-                  {!fetching ? (
-                    filteredSubItems.length > 0
-                      ? filteredSubItems.map((subItem, idX) => (
-                        <Item
-                          key={`${idX}-${subItem.value}`}
-                          label={subItem.label}
-                          icon={subItem.icon}
-                          onClick={(e) => handleClickSubItem(subItem, e)}
-                          validateStyle={validateStyle}
-                        />
-                      ))
-                      : (
-                        <li className={validateStyle('noItemsFound')}>No items found</li>
-                      )
+                  {isLoading || isSearching ? (
+                    <li className={validateStyle('loadItems')}>{loadingText}</li>
+                  ) : filteredSubItems.length > 0 || hasResults ? (
+                    filteredSubItems.map((subItem, idX) => (
+                      <Item
+                        key={`${idX}-${subItem.value}`}
+                        label={subItem.label}
+                        icon={subItem.icon}
+                        onClick={(e) => handleClickSubItem(subItem, e)}
+                        validateStyle={validateStyle}
+                      />
+                    ))
                   ) : (
-                    <li className={validateStyle('loadItems')}>Loading...</li>
+                    !isSearching && <li className={validateStyle('noItemsFound')}>{noResultsText}</li>
                   )}
                 </SubItems>
               </div>

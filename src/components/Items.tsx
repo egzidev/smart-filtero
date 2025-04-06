@@ -4,7 +4,7 @@ import {ItemsCmp} from "@/types";
 const Items: React.FC<ItemsCmp> = ({
   isFocused,
   showSubItems,
-  fetching,
+  isLoading,
   filteredItemsLength,
   children,
   validateStyle
@@ -12,7 +12,7 @@ const Items: React.FC<ItemsCmp> = ({
   return (
     isFocused
     && !showSubItems
-    && !fetching
+    && !isLoading
     && filteredItemsLength
     && (
       <ul className={validateStyle('dropdownItemContainer')}> {children} </ul>

@@ -8,7 +8,7 @@ const { terser } = require('rollup-plugin-terser');
 const devMode = process.env.NODE_ENV === 'development';
 
 module.exports = {
-  input: 'src/index.ts',
+  input: 'src/index.js',
   output: {
     file: 'dist/index.js',
     format: 'es',

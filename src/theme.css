@@ -1,0 +1,23 @@
+:root {
+    --border-color: #d1d5dc;
+    --item-bg: #edf2f7;
+    --subitem-bg: #e0e5ea;
+    --item-text: #2d3748;
+    --dropdown-border: #cbd5e0;
+    --dropdown-bg: white;
+    --dropdown-hover-bg: #edf2f7;
+    --text-color: #404040;
+    --clear-btn-bg: #edf2f7;
+}
+
+[data-theme="dark"], .dark {
+    --border-color: #3f4146;
+    --item-bg: #28272d;
+    --subitem-bg: #3f4146;
+    --item-text: #edf2f7;
+    --dropdown-border: #36353c;
+    --dropdown-bg: #28272d;
+    --dropdown-hover-bg: #3e3c42;
+    --text-color: #e2e8f0;
+    --clear-btn-bg: #28272d;
+}

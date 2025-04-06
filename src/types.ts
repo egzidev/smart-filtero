@@ -1,92 +1,95 @@
+import React from "react";
 
-import {LucideProps} from "lucide-react";
+export type IconType = React.ComponentType<any> | React.ReactElement | null;
+export type StyleValidator = (style: string) => string;
+export type InputFocusHandler = (e: React.FocusEvent<HTMLInputElement>) => void;
+export type InputChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => void;
+export type MaybeAsync<T> = T | Promise<T>;
+export type RemoveItemHandler = (item: Item, subItemLabel?: string) => void;
+export type RemoveItemByValueHandler = (item: string, subItem?: string) => void;
 
-export interface Item {
+export interface BaseItem {
   value: string;
   label: string;
+  icon?: IconType;
+}
+
+export interface WithChildren {
+  children: React.ReactNode;
+}
+
+export interface Item extends BaseItem {
   isAsync?: boolean;
   typed?: boolean;
-  icon?: React.ComponentType<LucideProps>;
   item?: string;
   subItems?: SubItem[];
+  debounceDelay?: number;
 }
 
 export interface ItemCmp {
   label?: string;
-  icon?: React.ComponentType<LucideProps>;
+  icon?: IconType;
   query?: string;
   onClick: (e: React.MouseEvent<HTMLLIElement>) => void;
   isTyped?: boolean;
-  validateStyle: (style: string) => string;
+  validateStyle: StyleValidator;
 }
 
-export interface ItemsCmp {
+export interface ItemsCmp extends WithChildren {
   isFocused: boolean;
   showSubItems: Item | null;
-  fetching: boolean;
+  isLoading: boolean;
   filteredItemsLength: boolean;
-  children: React.ReactNode;
-  validateStyle: (style: string) => string;
+  validateStyle: StyleValidator;
 }
 
 export interface InputCmp {
   inputRef: React.RefObject<HTMLInputElement>;
   query: string;
-  handleInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  validateStyle: (style: string) => string;
+  handleInputFocus: InputFocusHandler;
+  handleInputChange: InputChangeHandler;
+  validateStyle: StyleValidator;
   placeholder: string;
 }
 
-export interface SubItemsCmp {
+export interface SubItemsCmp extends WithChildren {
   showSubItems: Item | null;
   isFocused: boolean;
-  children: React.ReactNode;
-  validateStyle: (style: string) => string;
+  validateStyle: StyleValidator;
 }
 
-export interface QueryItemCmp {
+export interface QueryItemCmp extends WithChildren {
   query: string;
   showSubItems: Item | null;
   isFocused: boolean;
-  children: React.ReactNode;
-  validateStyle: (style: string) => string;
+  validateStyle: StyleValidator;
 }
 
 
 export interface SelectedItemCmp {
   item: Item;
-  removeItem: (item: Item, subItemLabel?: string) => void;
+  removeItem: RemoveItemHandler;
   validateStyle: (style: string) => string
 }
 
 export interface SelectedSubItemCmp {
   item: Item;
-  removeItem: (item: Item, subItemLabel: string) => void;
-  validateStyle: (style: string) => string
+  removeItem: RemoveItemHandler;
+  validateStyle: StyleValidator;
 
 }
 
-export interface SubItem {
-  value: string;
-  label: string;
+export interface SubItem extends BaseItem {
   subItems?: SubItem;
   subItem?: string | null;
-  icon?: React.ComponentType<LucideProps>;
 }
 
-export interface SubItems {
-  [key: string]: SubItem[];
-}
 
 // Define types for selected items
-export interface SelectedItem {
-  value: string;
+export interface SelectedItem extends BaseItem {
   isAsync?: boolean;
   typed: boolean;
-  label: string;
   subItem?: string;
-  icon?: React.ComponentType<LucideProps>;
   item: string;
   subItems: SubItem[];
 }
@@ -99,8 +102,8 @@ export interface UseSmartFilterResult {
   filteredSubItems: SubItem[];
   selectedItems: SelectedItem[];
   selectItem: (item: Item, subItem?: SubItem) => void;
-  selectItemFromUrl: (item: Item, subItem?: SubItem | { label: string; icon: React.ComponentType<LucideProps> }) => void;
-  removeItem: (item: string, subItem?: string) => void;
+  selectItemFromUrl: (item: Item, subItem?: SubItem | { label: string; icon: IconType }) => void;
+  removeItem: RemoveItemByValueHandler;
   // getSubItems: (item: Item) => SubItem[];
   showSubItems: Item | null;
   handleSelect: (item: Item) => void;
@@ -108,30 +111,29 @@ export interface UseSmartFilterResult {
   resetSubItems: () => void;
 }
 
-interface SubItemProps {
-  value: string;
-  label: string;
+interface SubItemProps extends BaseItem{
   subItems?: SubItemProps;
   subItem?: string;
-  icon?: React.ComponentType<LucideProps>;
 }
 
 export interface SubItemsProps {
   [key: string]: SubItemProps[];
 }
 
-interface FetchFunctions {
-  [key: string]: (query?: string) => void;
+export interface FetchFunctions {
+  [key: string]: (query?: string) => MaybeAsync<void>;
 }
 
 export interface StyleThemeProps {
   container?: string;
   inputContainer?: string;
-  dropdown?: string;
+  dropdownContainer?: string;
   dropdownItemContainer?: string;
   dropdownSubItemContainer?: string;
-  selectedItems?: string;
+  selectedItemsContainer?: string;
+  selectedItemsWrapper?: string;
   selectedItem?: string;
+  selectedText?: string;
   selectedSubItem?: string;
   removeIcon?: string;
   searchInput?: string;
@@ -144,18 +146,32 @@ export interface StyleThemeProps {
   scrollable?: string;
   searchContainer?: string;
   searchWrapper?: string;
-
 }
 
-export interface SmartFilteroProps {
+
+interface BaseSmartFilteroProps {
   items: Item[];
   subItems: SubItemsProps;
-  fetching: boolean;
-  fetchFunctions: FetchFunctions;
+  fetchFunctions?: FetchFunctions;
   excludeSelected?: boolean;
   styleTheme?: StyleThemeProps;
   getSelectedItems: (items: { id: string; value: string }[]) => void;
-  defaultSelectedItems?: { itemValue: string; subItemValue: string }[];
-  withoutUrl?: boolean;
+  withUrl?: boolean;
   inputPlaceholder?: string;
+  searchItem?: {
+    label: string;
+    icon?: React.ComponentType<any> | React.ReactElement| null
+  }
+  defaultSelectedItems?: { itemValue: string; subItemValue: string }[];
+  debounceDelay?: number;
+  loadingText?: string;
+  noResultsText?: string;
 }
+
+type XOR<T, U> =
+  | (T & { [K in keyof U]?: never })
+  | (U & { [K in keyof T]?: never });
+
+type OnlyOneQuery = XOR<{ defaultQuery?: string }, { defaultSelectedQuery?: string }>;
+
+export type SmartFilteroProps = BaseSmartFilteroProps & OnlyOneQuery;

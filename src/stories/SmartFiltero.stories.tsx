@@ -12,13 +12,13 @@ export default {
 } as Meta;
 
 const items = [
-  {value: 'customer_username', label: 'Customer', icon: User, isAsync: true},
+  {value: 'customer_username', label: 'Customer', icon: User, isAsync: true, debounceDelay: 2000},
   {value: 'investor_username', label: 'Investor', icon: LucideBanknote, isAsync: true},
   {value: 'status', label: 'Status', icon: Tag},
   {value: 'city', label: 'City', icon: MapPin},
 ];
 
-const staticSubItems = {
+const subItems = {
   status: [
     {value: 'cancel', label: 'Canceled', icon: CircleX},
     {value: 'in-progress', label: 'In-progress', icon: Clock},
@@ -55,10 +55,6 @@ const fetchCustomers = async (query = '') => {
 
 const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
-  const [investors, setInvestors] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [fetching, setFetching] = useState(false);
-
   const [searchParams, setSearchParams] = useState(window.location.search);
 
   useEffect(() => {
@@ -75,39 +71,9 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
     return Array.from(params.toString());
   }, [searchParams]);
 
-  const loadInvestors = async (query = '') => {
-    setFetching(true);
-    try {
-      const data = await fetchCustomers(query);
-      setInvestors(data);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-    } finally {
-      setFetching(false);
-    }
-  };
-
-  const loadCustomers = async (query = '') => {
-    setFetching(true);
-    try {
-      const data = await fetchCustomers(query);
-      setCustomers(data);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-    } finally {
-      setFetching(false);
-    }
-  };
-
   const fetchFunctions = {
-    customer_username: loadCustomers,
-    investor_username: loadInvestors,
-  };
-
-  const updatedSubItems = {
-    ...staticSubItems,
-    customer_username: customers,
-    investor_username: investors
+    customer_username: fetchCustomers,
+    investor_username: fetchCustomers,
   };
 
   return (
@@ -115,8 +81,6 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
       {/* Render SmartFiltero */}
       <SmartFiltero
         {...args}
-        subItems={updatedSubItems}
-        fetching={fetching}
         fetchFunctions={fetchFunctions}
         getSelectedItems={(items) => {
           console.log('Selected Items:', items);
@@ -138,33 +102,30 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
 export const Default = AsyncTemplate.bind({});
 Default.args = {
   items,
-  subItems: staticSubItems,
-  fetching: false,
+  subItems
 };
 
 // With placeholder
 export const WithPlaceholder = AsyncTemplate.bind({});
 WithPlaceholder.args = {
   items,
-  subItems: staticSubItems,
-  fetching: false,
+  subItems,
   inputPlaceholder: 'Input placeholder',
 };
 
 // without withoutUrl true
-export const WithoutUrl = AsyncTemplate.bind({});
-WithoutUrl.args = {
+export const WithUrl = AsyncTemplate.bind({});
+WithUrl.args = {
   items,
-  subItems: staticSubItems,
-  fetching: false,
-  withoutUrl: true,
+  subItems,
+  withUrl: true,
 };
 
 // with defaultSelectedItems
 export const WithDefaultSelectedItems = AsyncTemplate.bind({});
 WithDefaultSelectedItems.args = {
   items,
-  subItems: staticSubItems,
+  subItems,
   defaultSelectedItems: [
     {itemValue: 'city', subItemValue: 'new_york'},
   ],

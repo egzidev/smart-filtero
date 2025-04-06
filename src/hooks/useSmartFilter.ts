@@ -1,6 +1,5 @@
 import {useState} from 'react';
-import {Item, SelectedItem, SubItem, SubItemsProps, UseSmartFilterResult} from "@/types";
-import {LucideProps} from "lucide-react";
+import {IconType, Item, SelectedItem, SubItem, SubItemsProps, UseSmartFilterResult} from "@/types";
 
 const useSmartFilter = (
   items: Item[],
@@ -12,26 +11,19 @@ const useSmartFilter = (
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [showSubItems, setShowSubItems] = useState<Item | null>(null);
 
-
-  // const isItemSelected = (item: SubItem) => selectedItems.some(selected => selected.subItems.includes(item.label));
-  const isItemSelected = (item: SubItem) => selectedItems.some(selected =>
-    selected.subItems.some(sub => sub.value === item.value)
+  const isItemSelected = (subItem: SubItem) => selectedItems.some(selected =>
+    selected.subItems.some(sub => sub.label === subItem.label)
   );
-
-  /*const areAllSubItemsSelected = (item: Item) => {
-    if (!subItems[item.label]) return false;
-    return subItems[item.label].every(subItem => isItemSelected(subItem));
-  };*/
 
   const filteredItems = items.filter(item =>
     item.value?.toLowerCase().includes(query.toLowerCase()) &&
-    (!excludeSelected || (!selectedItems.some(selected => selected.item === item.value)))
+    (!excludeSelected || (!selectedItems.some(selected => selected.value === item.value)))
   );
 
   const subItemsCollector = subItems[showSubItems?.value ?? ''] || [];
 
   const filteredSubItems = subItemsCollector.filter(subItem =>
-    subItem.value.toLowerCase().includes(query.toLowerCase()) && !isItemSelected(subItem)
+    subItem.label.toLowerCase().includes(query.toLowerCase()) && !isItemSelected(subItem)
   );
 
   const selectItem = (item: Item, subItem?: SubItem) => {
@@ -66,7 +58,7 @@ const useSmartFilter = (
     setShowSubItems(null);
   };
 
-  const selectItemFromUrl = (item: Item, subItem?: SubItem | { label: string; icon: React.ComponentType<LucideProps> }) => {
+  const selectItemFromUrl = (item: Item, subItem?: SubItem | { label: string; icon: IconType}) => {
     // @ts-ignore
     setSelectedItems(prevSelectedItems => {
       const existingItemIndex = prevSelectedItems.findIndex(
@@ -92,11 +84,12 @@ const useSmartFilter = (
       } else {
         // If the item does not exist, add it as a new item with the sub-item
         const newItem = {
-          id: item.value,
+          value: item.value,
           item: item.label ?? '',
           subItems: subItem ? [subItem] : [],
           isAsync: item.isAsync ?? false,
           typed: item.typed ?? false,
+          icon: item.icon ?? null,
         };
 
         return newItem ? [...prevSelectedItems, newItem] : prevSelectedItems;
@@ -163,6 +156,7 @@ const useSmartFilter = (
 
   const resetSubItems = () => {
     setShowSubItems(null);
+    setQuery('');
   }
 
   return {

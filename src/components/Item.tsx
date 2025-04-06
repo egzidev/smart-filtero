@@ -1,5 +1,4 @@
 import React from "react";
-import {LucideProps} from "lucide-react";
 import {ItemCmp} from "@/types";
 
 const Item: React.FC<ItemCmp> = ({
@@ -11,9 +10,14 @@ const Item: React.FC<ItemCmp> = ({
   validateStyle,
 }) => {
 
-  const getIcon = (icon: React.ComponentType<LucideProps>) => {
-    const Icon = icon;
-    return <Icon size={14}/>;
+  const getIcon = (
+    icon: React.ComponentType<any> | React.ReactElement
+  ) => {
+    if (React.isValidElement(icon)) {
+      return icon;
+    }
+    const Icon = icon as React.ComponentType<any>;
+    return <Icon size={14} />;
   };
 
   return (
