@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Meta, StoryFn} from '@storybook/react';
 import SmartFiltero from "./../components/SmartFiltero";
 import {SmartFilteroProps} from '@/types';
-import {User, Tag, MapPin, CircleX, Clock, CheckCircle, LucideBanknote} from 'lucide-react';
+import {User, Tag,  CircleX, Clock, CheckCircle} from 'lucide-react';
 import './style.css';
 
 export default {
@@ -11,36 +11,6 @@ export default {
   tags: ["autodocs"],
 } as Meta;
 
-const items = [
-  {value: 'customer_username', label: 'Customer', icon: User, isAsync: true, debounceDelay: 2000},
-  {value: 'investor_username', label: 'Investor', icon: LucideBanknote, isAsync: true},
-  {value: 'status', label: 'Status', icon: Tag},
-  {value: 'city', label: 'City', icon: MapPin},
-];
-
-const subItems = {
-  status: [
-    {value: 'cancel', label: 'Canceled', icon: CircleX},
-    {value: 'in-progress', label: 'In-progress', icon: Clock},
-    {value: 'paid', label: 'Paid', icon: CheckCircle},
-  ],
-  city: [
-    {value: 'new_york', label: 'New York'},
-    {value: 'los_angeles', label: 'Los Angeles'},
-    {value: 'chicago', label: 'Chicago'},
-    {value: 'houston', label: 'Houston'},
-    {value: 'phoenix', label: 'Phoenix'},
-    {value: 'philadelphia', label: 'Philadelphia'},
-    {value: 'san_antonio', label: 'San Antonio'},
-    {value: 'san_diego', label: 'San Diego'},
-    {value: 'dallas', label: 'Dallas'},
-    {value: 'san_jose', label: 'San Jose'},
-    {value: 'austin', label: 'Austin'},
-    {value: 'jacksonville', label: 'Jacksonville'},
-    {value: 'fort_worth', label: 'Fort Worth'},
-    {value: 'columbus', label: 'Columbus'},
-  ]
-};
 
 // Fetch function for customers
 const fetchCustomers = async (query = '') => {
@@ -52,6 +22,38 @@ const fetchCustomers = async (query = '') => {
     icon: User,
   }));
 };
+
+const items = [
+  {
+    value: 'status',
+    label: 'Status',
+    icon: Tag,
+    subItems: [
+      {
+        value: 'cancel',
+        label: 'Canceled',
+        icon: CircleX,
+      },
+      {
+        value: 'in-progress',
+        label: 'In-progress',
+        icon: Clock,
+      },
+      {
+        value: 'paid',
+        label: 'Paid',
+        icon: CheckCircle,
+      },
+    ],
+  },
+  {
+    value: 'customer_username',
+    label: 'Customer',
+    icon: User,
+    subItems: [],
+    isAsync: true,
+  }
+];
 
 const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
@@ -67,13 +69,12 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
   const getSelectedItemsFromURL = useMemo(() => {
     const params = new URLSearchParams(searchParams);
     ["viewMode", "id", "globals", "args"].forEach((key) => params.delete(key));
-    console.log('params:', params.toString()  );
+    console.log('params:', params.toString());
     return Array.from(params.toString());
   }, [searchParams]);
 
   const fetchFunctions = {
     customer_username: fetchCustomers,
-    investor_username: fetchCustomers,
   };
 
   return (
@@ -102,14 +103,12 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
 export const Default = AsyncTemplate.bind({});
 Default.args = {
   items,
-  subItems
 };
 
 // With placeholder
 export const WithPlaceholder = AsyncTemplate.bind({});
 WithPlaceholder.args = {
   items,
-  subItems,
   inputPlaceholder: 'Input placeholder',
 };
 
@@ -117,7 +116,6 @@ WithPlaceholder.args = {
 export const WithUrl = AsyncTemplate.bind({});
 WithUrl.args = {
   items,
-  subItems,
   withUrl: true,
 };
 
@@ -125,7 +123,6 @@ WithUrl.args = {
 export const WithDefaultSelectedItems = AsyncTemplate.bind({});
 WithDefaultSelectedItems.args = {
   items,
-  subItems,
   defaultSelectedItems: [
     {itemValue: 'city', subItemValue: 'new_york'},
   ],

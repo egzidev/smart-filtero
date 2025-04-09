@@ -1,9 +1,8 @@
 import {useState} from 'react';
-import {IconType, Item, SelectedItem, SubItem, SubItemsProps, UseSmartFilterResult} from "@/types";
+import {IconType, Item, SelectedItem, SubItem, UseSmartFilterResult} from "@/types";
 
 const useSmartFilter = (
   items: Item[],
-  subItems: SubItemsProps,
   excludeSelected: boolean = true,
 ): UseSmartFilterResult => {
 
@@ -12,7 +11,7 @@ const useSmartFilter = (
   const [showSubItems, setShowSubItems] = useState<Item | null>(null);
 
   const isItemSelected = (subItem: SubItem) => selectedItems.some(selected =>
-    selected.subItems.some(sub => sub.label === subItem.label)
+    selected.subItems.some(sub => sub.value === subItem.value)
   );
 
   const filteredItems = items.filter(item =>
@@ -20,7 +19,8 @@ const useSmartFilter = (
     (!excludeSelected || (!selectedItems.some(selected => selected.value === item.value)))
   );
 
-  const subItemsCollector = subItems[showSubItems?.value ?? ''] || [];
+// Dynamically collect subItems based on selected item
+  const subItemsCollector = showSubItems ? showSubItems.subItems || [] : [];
 
   const filteredSubItems = subItemsCollector.filter(subItem =>
     subItem.label.toLowerCase().includes(query.toLowerCase()) && !isItemSelected(subItem)
@@ -28,8 +28,9 @@ const useSmartFilter = (
 
   const selectItem = (item: Item, subItem?: SubItem) => {
     if (subItem) {
+      // If a subitem is selected, update the selected item's subItems
       setSelectedItems(prevSelectedItems => prevSelectedItems.map(selectedItem => {
-        if (selectedItem.item === item.label) {
+        if (selectedItem.value === item.value) {
           const updatedSubItems: SubItem[] = [...selectedItem.subItems, subItem];
           return {
             ...selectedItem,
@@ -39,14 +40,13 @@ const useSmartFilter = (
         return selectedItem;
       }));
     } else {
-
-      // @ts-ignore
+      // If no subitem, create a new SelectedItem with empty subItems
       const newItem: SelectedItem = {
         value: item.value,
-        item: item.label ?? '',
-        subItems: [],
-        isAsync: item.isAsync ?? false,
+        label: item.label ?? '',
+        icon: item.icon ?? null, // Ensure icon is passed
         typed: item.typed ?? false,
+        subItems: [],
       };
 
       setSelectedItems(prevSelectedItems => [...prevSelectedItems, newItem]);
@@ -58,7 +58,7 @@ const useSmartFilter = (
     setShowSubItems(null);
   };
 
-  const selectItemFromUrl = (item: Item, subItem?: SubItem | { label: string; icon: IconType}) => {
+  const selectItemFromUrl = (item: Item, subItem?: SubItem | { label: string; icon: IconType }) => {
     // @ts-ignore
     setSelectedItems(prevSelectedItems => {
       const existingItemIndex = prevSelectedItems.findIndex(
@@ -85,7 +85,7 @@ const useSmartFilter = (
         // If the item does not exist, add it as a new item with the sub-item
         const newItem = {
           value: item.value,
-          item: item.label ?? '',
+          label: item.label ?? '',
           subItems: subItem ? [subItem] : [],
           isAsync: item.isAsync ?? false,
           typed: item.typed ?? false,
@@ -103,13 +103,13 @@ const useSmartFilter = (
   };
 
 
-  const removeItem = (item: string, subItemValue?: string) => {
+  const removeItem = (itemValue: string, subItemValue?: string) => {
     setSelectedItems(prevSelectedItems => {
       // Filter out null values and handle sub-item removal
       return prevSelectedItems.reduce<SelectedItem[]>((accumulator, selectedItem) => {
         if (!selectedItem) return accumulator; // Skip null or undefined items
 
-        if (selectedItem.item === item) {
+        if (selectedItem.value === itemValue) {
           if (subItemValue) {
             // Filter out the specific subItem based on value using reduce
             const filteredSubItems = selectedItem.subItems.reduce<SubItem[]>((subAccumulator, subItem) => {

@@ -1,8 +1,8 @@
 import {useEffect, useRef, useState} from 'react';
 import {debounce} from 'lodash';
-import {FetchFunctions, Item, SubItemsProps} from '../types';
+import {FetchFunctions, Item} from '../types';
 
-const useAsync = (subItems: SubItemsProps, debounceDelay: number, fetchFunctions?: FetchFunctions) => {
+const useAsync = (debounceDelay: number, fetchFunctions?: FetchFunctions) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [hasResults, setHasResults] = useState<boolean>(false);
@@ -12,7 +12,7 @@ const useAsync = (subItems: SubItemsProps, debounceDelay: number, fetchFunctions
       setIsLoading(true);
       try {
         const data = item.value ? await fetchFunctions[item.value](query) : [];
-        subItems[item.value] = data || [];
+        item.subItems = data || [];
         if (callback) callback(data);
       } finally {
         setIsLoading(false);
@@ -37,7 +37,7 @@ const useAsync = (subItems: SubItemsProps, debounceDelay: number, fetchFunctions
       setIsLoading(true);
       try {
         const data = item.value ? await fetchFunctions[item.value]() : [];
-        subItems[item.value] = data || [];
+        item.subItems = data || [];
       } finally {
         setIsLoading(false);
       }

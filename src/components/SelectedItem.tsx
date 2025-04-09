@@ -9,9 +9,9 @@ const SelectedItem: React.FC<SelectedItemCmp> = ({
 }) => {
   return (
     <div className={validateStyle('selectedItem')}>
-      <span>{item.item}</span>
+      <span>{item.label}</span>
       {item.typed && (
-        <div className={validateStyle('removeIcon')} onClick={() => removeItem(item)}>
+        <div className={validateStyle('removeIcon')} onClick={() => removeItem(item.value)}>
           <X size={16}/>
         </div>
       )}

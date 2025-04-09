@@ -5,8 +5,8 @@ export type StyleValidator = (style: string) => string;
 export type InputFocusHandler = (e: React.FocusEvent<HTMLInputElement>) => void;
 export type InputChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => void;
 export type MaybeAsync<T> = T | Promise<T>;
-export type RemoveItemHandler = (item: Item, subItemLabel?: string) => void;
-export type RemoveItemByValueHandler = (item: string, subItem?: string) => void;
+export type RemoveItemHandler = (selectedItemValue: string, selectedSubItemValue?: string) => void;
+export type RemoveItemByValueHandler = (selectedItem: string, subItem?: string) => void;
 
 export interface BaseItem {
   value: string;
@@ -24,6 +24,7 @@ export interface Item extends BaseItem {
   item?: string;
   subItems?: SubItem[];
   debounceDelay?: number;
+  onClick?: (item: Item) => void;
 }
 
 export interface ItemCmp {
@@ -80,17 +81,13 @@ export interface SelectedSubItemCmp {
 }
 
 export interface SubItem extends BaseItem {
-  subItems?: SubItem;
-  subItem?: string | null;
+  onClick?: (subItem: SubItem, parentItem: Item) => void;
 }
 
 
 // Define types for selected items
 export interface SelectedItem extends BaseItem {
-  isAsync?: boolean;
   typed: boolean;
-  subItem?: string;
-  item: string;
   subItems: SubItem[];
 }
 
@@ -151,7 +148,6 @@ export interface StyleThemeProps {
 
 interface BaseSmartFilteroProps {
   items: Item[];
-  subItems: SubItemsProps;
   fetchFunctions?: FetchFunctions;
   excludeSelected?: boolean;
   styleTheme?: StyleThemeProps;
@@ -166,6 +162,8 @@ interface BaseSmartFilteroProps {
   debounceDelay?: number;
   loadingText?: string;
   noResultsText?: string;
+  onClickItem?: (item: Item) => void;
+  onClickSubItem?: (subItem: SubItem, parentItem: Item) => void;
 }
 
 type XOR<T, U> =

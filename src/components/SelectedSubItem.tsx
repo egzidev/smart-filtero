@@ -32,7 +32,7 @@ const SelectedSubItem: React.FC<SelectedSubItemCmp> = ({
         <span>{subItem.label}</span>
         <div
           className={validateStyle('removeIcon')}
-          onClick={() => removeItem(item, subItem.value)}
+          onClick={() => removeItem(item.value, subItem.value)}
         >
           <X size={16}/>
         </div>
