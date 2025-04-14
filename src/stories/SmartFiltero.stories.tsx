@@ -1,8 +1,8 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Meta, StoryFn} from '@storybook/react';
 import SmartFiltero from "./../components/SmartFiltero";
-import {SmartFilteroProps} from '@/types';
-import {User, Tag,  CircleX, Clock, CheckCircle} from 'lucide-react';
+import {Item, SmartFilteroProps} from '@/types';
+import {User, Tag, CircleX, Clock, CheckCircle} from 'lucide-react';
 import './style.css';
 
 export default {
@@ -28,6 +28,10 @@ const items = [
     value: 'status',
     label: 'Status',
     icon: Tag,
+    onClick: (item: any, subItem: any) => {
+      console.log('Clicked Item:', item.value);
+      console.log('Clicked SubItem:', subItem.value);
+    },
     subItems: [
       {
         value: 'cancel',
@@ -47,6 +51,16 @@ const items = [
     ],
   },
   {
+    value: 'city',
+    label: 'City',
+    icon: Tag,
+    subItems: [
+      {value: 'new_york', label: 'New York'},
+      {value: 'los_angeles', label: 'Los Angeles'},
+      {value: 'chicago', label: 'Chicago'},
+    ],
+  },
+  {
     value: 'customer_username',
     label: 'Customer',
     icon: User,
@@ -58,6 +72,7 @@ const items = [
 const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
   const [selectedItems, setSelectedItems] = useState<any[]>([]);
   const [searchParams, setSearchParams] = useState(window.location.search);
+  const [filterItems, setFilterItems] = useState<Item[]>(items);
 
   useEffect(() => {
     const handleUrlChange = () => setSearchParams(window.location.search);
@@ -66,7 +81,7 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
     return () => window.removeEventListener('popstate', handleUrlChange);
   }, []);
 
-  const getSelectedItemsFromURL = useMemo(() => {
+  const onChangeSelectionFromURL = useMemo(() => {
     const params = new URLSearchParams(searchParams);
     ["viewMode", "id", "globals", "args"].forEach((key) => params.delete(key));
     console.log('params:', params.toString());
@@ -82,9 +97,43 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
       {/* Render SmartFiltero */}
       <SmartFiltero
         {...args}
+        items={filterItems}
         fetchFunctions={fetchFunctions}
-        getSelectedItems={(items) => {
-          console.log('Selected Items:', items);
+        onItemClick={(item, subItem) => {
+          console.log(`[SELECTED] ${item.label} → ${subItem.label}`);
+
+          // Example 1: Trigger special behavior for "status: paid"
+          if (item.value === 'status' && subItem.value === 'paid') {
+            console.log('Triggering discount logic for paid orders...');
+
+            const updatedItems = filterItems.map((filterItem) => {
+              if (filterItem.value === 'city' && filterItem.subItems) {
+                return {
+                  ...filterItem,
+                  subItems: filterItem.subItems.map((sub) =>
+                    sub.value === 'new_york'
+                      ? { ...sub, value: 'egzi', label: 'Egzi' }
+                      : sub
+                  ),
+                };
+              }
+              return filterItem;
+            });
+
+            setFilterItems(updatedItems);
+          }
+        }}
+        onItemRemoveClick={(item, subItem) => {
+          console.log(`[REMOVED] ${item.label} → ${subItem.label}`);
+
+          // Example 1: Revert modified data
+          if (item.value === 'status' && subItem.value === 'paid') {
+            console.log('Reverting city names back to original...');
+            setFilterItems(items); // reset to initial state
+          }
+        }}
+        onChangeSelection={(items) => {
+          // console.log('Selected Items:', items);
           setSelectedItems([...items]);
         }}
       />
@@ -93,7 +142,7 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
       <div className="selected-items">
         <h3>Selected Items</h3>
         <pre>{JSON.stringify(selectedItems, null, 2)}</pre>
-        <pre>URL Params: {getSelectedItemsFromURL}</pre>
+        <pre>URL Params: {onChangeSelectionFromURL}</pre>
       </div>
     </div>
   );

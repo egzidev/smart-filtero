@@ -29,21 +29,21 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   fetchFunctions,
   excludeSelected = true,
   styleTheme = {},
-  getSelectedItems,
+  onChangeSelection,
   withUrl = false,
   inputPlaceholder = 'Search or filter by...',
   searchItem = {
     label: 'Search for this text',
     icon: Type,
   },
-  defaultQuery = '',
-  defaultSelectedQuery = '',
+  defaultSearchQuery = '',
+  defaultQuerySelection = '',
   defaultSelectedItems = [],
   debounceDelay = 500,
   noResultsText = "No results found",
   loadingText = "Loading...",
-  onClickItem,
-  onClickSubItem,
+  onItemClick,
+  onItemRemoveClick,
 }) => {
   const {
     // states
@@ -174,13 +174,6 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
 
     handleSelect(item);
     setQuery('');
-
-    if (item.onClick) {
-      item.onClick(item);
-    }
-    if(onClickItem){
-      onClickItem(item);
-    }
   }
 
   const handleClickSubItem = (subItem: SubItemProps, e: React.MouseEvent<HTMLLIElement>) => {
@@ -201,18 +194,18 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     // Update collection by adding the new item
     collectionRef.current.push(newItem);
 
-    // Call getSelectedItems with the updated collection
-    getSelectedItems(collectionRef.current);
+    // Call onChangeSelection with the updated collection
+    onChangeSelection(collectionRef.current);
 
     // Reset query after selection
     setQuery('');
 
-    if(subItem.onClick) {
-      subItem.onClick(subItem, showSubItems);
+    if (showSubItems.onClick) {
+      showSubItems.onClick(showSubItems,subItem);
     }
 
-    if(onClickSubItem){
-      onClickSubItem(subItem, showSubItems);
+    if (onItemClick) {
+      onItemClick(showSubItems, subItem);
     }
   };
 
@@ -220,7 +213,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     if (e) e.preventDefault();
 
     // Determine the label based on the type
-    const label = type === 'click' ? query : defaultSelectedQuery;
+    const label = type === 'click' ? query : defaultQuerySelection;
 
     const searchItem = {
       id: `search`,
@@ -244,8 +237,8 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
       updateURLParams({['search']: query});
     }
 
-    // Update getSelectedItems with the previous collection + the new search item
-    getSelectedItems(updatedCollection);
+    // Update onChangeSelection with the previous collection + the new search item
+    onChangeSelection(updatedCollection);
 
     // Update the collection ref with the updated collection
     collectionRef.current = updatedCollection;
@@ -254,6 +247,12 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   const removeSingleItem: RemoveItemHandler = (selectedItemValue, selectedSubItemValue) => {
     // Temp: Change the item.item
     const queryParam = transformLabelToQueryParam(selectedItemValue);
+
+    // Find parent item
+    const parentItem = items.find(i => i.value === selectedItemValue);
+
+    // Find subItem if value is provided
+    const subItem = parentItem?.subItems?.find(i => i.value === selectedSubItemValue);
 
     // Determine the updated collection
     let updatedCollection: any[] = [];
@@ -279,11 +278,15 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
       );
     }
 
-    // Call getSelectedItems with the updated collection
-    getSelectedItems(updatedCollection);
+    // Call onChangeSelection with the updated collection
+    onChangeSelection(updatedCollection);
 
     // Update the collection ref with the updated collection
     collectionRef.current = updatedCollection;
+
+    if (onItemRemoveClick && parentItem && subItem) {
+      onItemRemoveClick(parentItem, subItem);
+    }
   };
 
   const removeAllItems = () => {
@@ -308,15 +311,15 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   };
 
   useEffect(() => {
-    if (defaultQuery && defaultSelectedQuery) {
-      console.error("You can only provide either `defaultQuery` or `defaultSelectedQuery`, not both.");
+    if (defaultSearchQuery && defaultQuerySelection) {
+      console.error("You can only provide either `defaultSearchQuery` or `defaultQuerySelection`, not both.");
     }
 
-    if (defaultQuery && !selectedItems.length && !defaultSelectedQuery) {
-      setQuery(defaultQuery);
+    if (defaultSearchQuery && !selectedItems.length && !defaultQuerySelection) {
+      setQuery(defaultSearchQuery);
     }
 
-    if (defaultSelectedQuery && !selectedItems.length && !defaultQuery) {
+    if (defaultQuerySelection && !selectedItems.length && !defaultSearchQuery) {
       handleSearchItem('default')
     }
 
@@ -332,40 +335,45 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   }, [showSubItems]);
 
   useEffect(() => {
-    if (withUrl) {
-      const params = new URLSearchParams(window.location.search);
-      const allParams: Record<string, string> = {};
+    if (!withUrl) return;
 
-      const urlQuery = params.get('query');
-      if (urlQuery) {
-        setQuery(urlQuery);
+    const params = new URLSearchParams(window.location.search);
+    const urlQuery = params.get('query');
+    if (urlQuery) setQuery(urlQuery);
+
+    const allParams: Record<string, string> = {};
+    params.forEach((value, key) => {
+      allParams[key] = value;
+    });
+
+    Object.entries(allParams).forEach(([key, value]) => {
+      if (key === 'search') {
+        selectItemFromUrl({
+          value: "search",
+          label: value,
+          subItems: [],
+          icon: Type,
+          typed: true,
+        });
+        return;
       }
 
-      params.forEach((value, key) => {
-        allParams[key] = value;
-
-        // Find the matching item in items array by value
-        const selectedItem = items.find(item => item.value === key);
-        if (allParams.search) {
-          selectItemFromUrl({
-            value: "search",
-            item: "Search",
-            subItems: [],
-            label: allParams.search,
-            icon: Type,
-            typed: true
-          });
-        }
-
-        if (selectedItem) {
-          selectItemFromUrl(selectedItem, {
-            label: value,
-            icon: selectedItem.icon ?? null,
-          });
-        }
-      });
-    }
-  }, [])
+      const selectedItem = items.find(item => item.value === key);
+      const selectedSubItem = selectedItem?.subItems?.find(
+        (subItem) => subItem.value === value
+      );
+      if (selectedItem && selectedSubItem) {
+        selectItemFromUrl({
+          value: selectedItem.value,
+          label: selectedItem.label,
+        }, {
+          value: selectedSubItem.value,
+          label: selectedSubItem.label,
+          icon: selectedSubItem.icon ?? null,
+        });
+      }
+    });
+  }, []);
 
 
   useEffect(() => {
@@ -382,7 +390,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
           });
 
           updateURLParams({
-            [transformLabelToQueryParam(defaultSelectedItem.itemValue)]: selectedSubItem.label
+            [transformLabelToQueryParam(defaultSelectedItem.itemValue)]: selectedSubItem.value
           });
         } else {
           selectItemFromUrl(selectedItem, {

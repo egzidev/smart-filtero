@@ -24,7 +24,7 @@ export interface Item extends BaseItem {
   item?: string;
   subItems?: SubItem[];
   debounceDelay?: number;
-  onClick?: (item: Item) => void;
+  onClick?: (item: Item, subItem: SubItem) => void;
 }
 
 export interface ItemCmp {
@@ -81,7 +81,6 @@ export interface SelectedSubItemCmp {
 }
 
 export interface SubItem extends BaseItem {
-  onClick?: (subItem: SubItem, parentItem: Item) => void;
 }
 
 
@@ -151,7 +150,7 @@ interface BaseSmartFilteroProps {
   fetchFunctions?: FetchFunctions;
   excludeSelected?: boolean;
   styleTheme?: StyleThemeProps;
-  getSelectedItems: (items: { id: string; value: string }[]) => void;
+  onChangeSelection: (items: { id: string; value: string }[]) => void;
   withUrl?: boolean;
   inputPlaceholder?: string;
   searchItem?: {
@@ -162,14 +161,14 @@ interface BaseSmartFilteroProps {
   debounceDelay?: number;
   loadingText?: string;
   noResultsText?: string;
-  onClickItem?: (item: Item) => void;
-  onClickSubItem?: (subItem: SubItem, parentItem: Item) => void;
+  onItemClick?: (item: Item, subItem: SubItem) => void;
+  onItemRemoveClick?: (item: Item, subItem: SubItem) => void;
 }
 
 type XOR<T, U> =
   | (T & { [K in keyof U]?: never })
   | (U & { [K in keyof T]?: never });
 
-type OnlyOneQuery = XOR<{ defaultQuery?: string }, { defaultSelectedQuery?: string }>;
+type OnlyOneQuery = XOR<{ defaultSearchQuery?: string }, { defaultQuerySelection?: string }>;
 
 export type SmartFilteroProps = BaseSmartFilteroProps & OnlyOneQuery;
