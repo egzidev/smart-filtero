@@ -7,11 +7,14 @@ export type InputChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => voi
 export type MaybeAsync<T> = T | Promise<T>;
 export type RemoveItemHandler = (selectedItemValue: string, selectedSubItemValue?: string) => void;
 export type RemoveItemByValueHandler = (selectedItem: string, subItem?: string) => void;
+export type OperatorValue = 'is' | 'is-not' | 'any' | 'not-any';
 
 export interface BaseItem {
   value: string;
   label: string;
   icon?: IconType;
+  operators?: Operator[];
+  operatorSelected?: Operator;
 }
 
 export interface WithChildren {
@@ -19,6 +22,7 @@ export interface WithChildren {
 }
 
 export interface Item extends BaseItem {
+  operations?: string[];
   isAsync?: boolean;
   typed?: boolean;
   item?: string;
@@ -34,6 +38,8 @@ export interface ItemCmp {
   onClick: (e: React.MouseEvent<HTMLLIElement>) => void;
   isTyped?: boolean;
   validateStyle: StyleValidator;
+  isSelected?: boolean;
+  isMultiOperator?: boolean | string;
 }
 
 export interface ItemsCmp extends WithChildren {
@@ -52,6 +58,11 @@ export interface InputCmp {
   validateStyle: StyleValidator;
   placeholder: string;
 }
+
+export type Operator = {
+  value: OperatorValue;
+  label: string;
+} | null;
 
 export interface SubItemsCmp extends WithChildren {
   showSubItems: Item | null;
@@ -77,10 +88,12 @@ export interface SelectedSubItemCmp {
   item: Item;
   removeItem: RemoveItemHandler;
   validateStyle: StyleValidator;
+  onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 
 }
 
 export interface SubItem extends BaseItem {
+  isSelected?: boolean;
 }
 
 
@@ -88,6 +101,8 @@ export interface SubItem extends BaseItem {
 export interface SelectedItem extends BaseItem {
   typed: boolean;
   subItems: SubItem[];
+  subItemsCollector?: SubItem[];
+  tempSelected?: boolean;
 }
 
 // Define the hook's return type
@@ -97,17 +112,18 @@ export interface UseSmartFilterResult {
   filteredItems: Item[];
   filteredSubItems: SubItem[];
   selectedItems: SelectedItem[];
-  selectItem: (item: Item, subItem?: SubItem) => void;
+  selectItem: ({item, subItem, operator}: { item: Item, subItem?: SubItem, operator?: Operator }) => void;
   selectItemFromUrl: (item: Item, subItem?: SubItem | { label: string; icon: IconType }) => void;
   removeItem: RemoveItemByValueHandler;
   // getSubItems: (item: Item) => SubItem[];
   showSubItems: Item | null;
-  handleSelect: (item: Item) => void;
+  handleSelect: ({item, operator}: { item: Item, operator?: Operator }) => void;
   resetSelectedItems: () => void;
   resetSubItems: () => void;
+  changeSelectSubItem: (item: Item) => void;
 }
 
-interface SubItemProps extends BaseItem{
+interface SubItemProps extends BaseItem {
   subItems?: SubItemProps;
   subItem?: string;
 }
@@ -147,6 +163,7 @@ export interface StyleThemeProps {
 
 interface BaseSmartFilteroProps {
   items: Item[];
+  operators?: Operator[];
   fetchFunctions?: FetchFunctions;
   excludeSelected?: boolean;
   styleTheme?: StyleThemeProps;
@@ -155,7 +172,7 @@ interface BaseSmartFilteroProps {
   inputPlaceholder?: string;
   searchItem?: {
     label: string;
-    icon?: React.ComponentType<any> | React.ReactElement| null
+    icon?: React.ComponentType<any> | React.ReactElement | null
   }
   defaultSelectedItems?: { itemValue: string; subItemValue: string }[];
   debounceDelay?: number;

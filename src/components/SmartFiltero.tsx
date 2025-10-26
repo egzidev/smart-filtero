@@ -13,19 +13,28 @@ import {
   Item as ItemProps,
   SubItem as SubItemProps,
   StyleThemeProps,
-  RemoveItemHandler
+  RemoveItemHandler, Operator
 } from "./../types";
 import SelectedText from "./../components/SelectedText";
 import {X} from "lucide-react";
-import {transformLabelToQueryParam, updateURLParams} from "./../utils/url";
+import {
+  emptyString,
+  hasSearchUrl,
+  isMultiOperator,
+  transformLabelToQueryParam,
+  updateURLParams
+} from "./../utils";
 import "./../theme.css";
 import styles from './../styles.module.css';
 import Input from "./../components/Input";
 import useAsync from "./../hooks/useAsync";
 import useUpdateEffect from "./../hooks/useUpdateEffect";
+import SelectedOperator from "./../components/SelectedOperator";
+import SelectedMultiSubItem from "./../components/SelectedMultiSubItem";
 
 const SmartFiltero: React.FC<SmartFilteroProps> = ({
   items,
+  operators,
   fetchFunctions,
   excludeSelected = true,
   styleTheme = {},
@@ -45,6 +54,8 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   onItemClick,
   onItemRemoveClick,
 }) => {
+  const [subItemDropdownPosition, setSubItemDropdownPosition] = useState<{ left: number; } | null>(null);
+
   const {
     // states
     query,
@@ -59,8 +70,9 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     removeItem,
     handleSelect,
     resetSelectedItems,
-    resetSubItems
-  } = useSmartFilter(items, excludeSelected);
+    resetSubItems,
+    changeSelectSubItem
+  } = useSmartFilter(items, operators, excludeSelected);
 
   const {
     // states
@@ -74,6 +86,8 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     setHasResults,
   } = useAsync(debounceDelay, fetchFunctions);
 
+  const selectedOperator = operators ? operators[0] : null
+
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const prevLengthRef = useRef(selectedItems.length);
@@ -83,6 +97,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [dropdownPosition, setDropdownPosition] = useState<{ left: number } | null>(null);
   const [isDropdownVisible, setIsDropdownVisible] = useState<boolean>(false);
+  const [operatorSelected, setOperatorSelected] = useState<Operator>(null);
 
   const recalculatePosition = useCallback((): Promise<void> => {
     return new Promise((resolve) => {
@@ -93,6 +108,10 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
         scrollableElement.scrollTo({
           left: scrollableElement.scrollWidth,
         });
+        if (!isMultiOperator(operatorSelected?.value || emptyString())) {
+          setSubItemDropdownPosition(null);
+          setOperatorSelected(selectedOperator)
+        }
 
         // Resolve the promise after the scroll operation
         setTimeout(() => resolve(), 0); // Adjust delay to fit your animation duration
@@ -102,24 +121,34 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     });
   }, []);
 
+  const tempSelectedRef = useRef<HTMLDivElement | null>(null);
+
   const recalculateDropdown = useCallback(() => {
-    if (inputRef.current && scrollableRef.current) {
-      const inputElement = inputRef.current;
+    if (scrollableRef.current) {
       const scrollableElement = scrollableRef.current;
 
-      // Get the scroll position of the container
+      // Prefer tempSelected ref if available
+      const targetElement = tempSelectedRef.current || inputRef.current;
+      if (!targetElement) return;
+
       const containerScrollLeft = scrollableElement.scrollLeft;
+      const targetOffsetLeft = targetElement.offsetLeft;
 
-      // Calculate the offset of the input relative to the container
-      const inputOffsetLeft = inputElement.offsetLeft;
-
-      // Adjust the dropdown position to ensure alignment with the input
       setDropdownPosition({
-        left: inputOffsetLeft - containerScrollLeft, // Adjust for container's scroll
+        left: targetOffsetLeft - containerScrollLeft,
       });
     }
   }, []);
 
+  const removeEmptySubItem = () => {
+    selectedItems.forEach(item => {
+      if (item.subItems.length == 0 && item.value !== 'search') {
+        removeSingleItem(item.value);
+        resetSubItems();
+        recalculatePosition().then(recalculateDropdown);
+      }
+    });
+  }
   const handleInputFocus = () => {
     setIsFocused(true);
     setIsDropdownVisible(false); // Hide the dropdown initially
@@ -127,19 +156,16 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     recalculatePosition().then(() => {
       recalculateDropdown(); // Recalculate the dropdown position
       setIsDropdownVisible(true); // Show dropdown only after recalculations
+      setSubItemDropdownPosition(null);
+      resetSubItems();
+      removeEmptySubItem()
     });
   };
 
   const handleClickOutside = (e: MouseEvent) => {
     if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
       setIsFocused(false);
-      selectedItems.forEach(item => {
-        if (item.subItems.length == 0 && item.value !== 'search') {
-          removeSingleItem(item.value);
-          resetSubItems();
-          recalculatePosition().then(recalculateDropdown);
-        }
-      });
+      removeEmptySubItem()
     }
   };
 
@@ -172,7 +198,9 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   const handleClickItem = (item: ItemProps, e: React.MouseEvent<HTMLLIElement>) => {
     e.preventDefault();
 
-    handleSelect(item);
+    handleSelect({
+      item,
+    });
     setQuery('');
   }
 
@@ -181,9 +209,11 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     if (!showSubItems) return;
 
     // Create the new collection entry
-    const newItem = {id: showSubItems.value, value: subItem.value};
+    const newItem = {id: showSubItems.value, value: subItem.value, operator: selectedOperator};
 
-    selectItem(showSubItems, subItem);
+    selectItem({item: showSubItems, subItem});
+    // After selecting a subItem, reset tempSelectedRef so dropdown no longer aligns to temp placeholder
+    tempSelectedRef.current = null;
 
     if (withUrl) {
       updateURLParams({
@@ -201,13 +231,62 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     setQuery('');
 
     if (showSubItems.onClick) {
-      showSubItems.onClick(showSubItems,subItem);
+      showSubItems.onClick(showSubItems, subItem);
     }
 
     if (onItemClick) {
       onItemClick(showSubItems, subItem);
     }
+
+    if(!isMultiOperator(operatorSelected?.value || emptyString()))
+      recalculatePosition().then(recalculateDropdown);
   };
+
+  const handleChangeOperator = (item: ItemProps, selectedOperator: Operator, e: React.MouseEvent<HTMLDivElement>) => {
+    // if (!showSubItems) return;
+
+    const newItem = {
+      id: item.value,
+      value: item.subItemSelected.value,
+      operator: selectedOperator,
+    };
+
+    selectItem({item, operator: selectedOperator});
+    setOperatorSelected(selectedOperator);
+
+    // Remove any existing item with the same id
+    collectionRef.current = collectionRef.current.filter(
+      (entry) => entry.id !== newItem.id
+    );
+
+    // Add the new item
+    collectionRef.current.push(newItem);
+
+    // Notify parent
+    onChangeSelection(collectionRef.current);
+
+    // Reset dropdown position based on operator type
+    if (isMultiOperator(selectedOperator?.value || emptyString())) {
+      // For multi-operator, keep dropdown aligned as before (do nothing)
+    } else {
+      // For non-multi operator, reset tempSelectedRef so dropdown doesn't align to old temp placeholder
+      tempSelectedRef.current = null;
+    }
+
+    if (!isMultiOperator(selectedOperator?.value || emptyString()) && item.subItems && item.subItems.length > 1) {
+      setIsFocused(true);
+    }
+  };
+
+  const handleChangeSubItem = (item: ItemProps, e: React.MouseEvent<HTMLDivElement>) => {
+    setIsFocused(true);
+    changeSelectSubItem(item);
+    setSubItemDropdownPosition({
+      left: e.currentTarget.offsetLeft,
+    });
+    console.log(item)
+    setOperatorSelected(item.operatorSelected || null)
+  }
 
   const handleSearchItem = (type: 'click' | 'default', e?: React.MouseEvent<HTMLLIElement>) => {
     if (e) e.preventDefault();
@@ -224,11 +303,13 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     const updatedCollection = [...collectionRef.current, searchItem];
 
     handleSelect({
-      value: `search`,
-      label,
-      subItems: [],
-      icon: Type,
-      typed: true,
+      item: {
+        value: `search`,
+        label,
+        subItems: [],
+        icon: Type,
+        typed: true,
+      }
     });
 
     setQuery('');
@@ -375,8 +456,9 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     });
   }, []);
 
-
   useEffect(() => {
+    if (!defaultSelectedItems.length) return;
+
     defaultSelectedItems.map(defaultSelectedItem => {
       const selectedItem = items.find(i => i.value === defaultSelectedItem.itemValue);
       const selectedSubItem = selectedItem?.subItems?.find(i => i.value === defaultSelectedItem.subItemValue);
@@ -407,7 +489,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     const currentLength = selectedItems.length;
     const prevLength = prevLengthRef.current;
 
-    if (currentLength >= prevLength) {
+    if (currentLength > prevLength) {
       recalculatePosition().then(recalculateDropdown);
     }
 
@@ -435,10 +517,8 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     removeItem: removeSingleItem,
   }
 
-  const hasSearchUrl = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasSearchParam = urlParams.has('search');
-    return !hasSearchParam && !collectionRef.current.some(item => item.id.startsWith('search'))
+  const getOperators = (item: ItemProps) => {
+    return operators || item.operators || [];
   }
 
   return (
@@ -454,7 +534,37 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
                   ) : (
                     <div className={validateStyle('selectedItemsWrapper')}>
                       <SelectedItem {...coreSelectedProps} item={item}/>
-                      <SelectedSubItem {...coreSelectedProps} item={item}/>
+                      {getOperators(item) && getOperators(item).length > 0 && (
+                        <SelectedOperator
+                          item={item}
+                          selectedOperator={item.operatorSelected || getOperators(item)[0]}
+                          validateStyle={validateStyle}
+                          operators={getOperators(item)}
+                          handleChangeOperator={handleChangeOperator}
+                          getOperatorPosition={(position) => {
+                            // Only set if we don’t already have a subItemDropdownPosition
+                            if (!subItemDropdownPosition) {
+                                setSubItemDropdownPosition({left: position});
+                            }
+                          }}
+                        />
+                      )}
+                      {item.tempSelected && (
+                        <div ref={tempSelectedRef} className={validateStyle('selectedText')}>
+                          <span>Select {item.label}</span>
+                        </div>
+                      )}
+                      {isMultiOperator(item.operatorSelected?.value || emptyString()) ?
+                        <SelectedMultiSubItem
+                          {...coreSelectedProps}
+                          item={item}
+                          onClick={(e) => handleChangeSubItem(item, e)}/>
+                        :
+                        <SelectedSubItem
+                          {...coreSelectedProps}
+                          item={item}
+                          onClick={(e) => handleChangeSubItem(item, e)}/>
+                      }
                     </div>
                   )}
                 </Fragment>
@@ -472,9 +582,10 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
               placeholder={selectedItems.length ? '' : inputPlaceholder}
             />
             {isFocused && isDropdownVisible && dropdownPosition && (
-              <div className={validateStyle('dropdownContainer')} style={{left: dropdownPosition.left}}>
+              <div className={validateStyle('dropdownContainer')}
+                   style={{left: subItemDropdownPosition ? subItemDropdownPosition.left : dropdownPosition.left}}>
                 {/* Query Item */}
-                {hasSearchUrl() && (
+                {hasSearchUrl(collectionRef) && (
                   <QueryItem {...coreContainerProps}>
                     <Item
                       label={searchItem.label}
@@ -511,6 +622,8 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
                         icon={subItem.icon}
                         onClick={(e) => handleClickSubItem(subItem, e)}
                         validateStyle={validateStyle}
+                        isSelected={subItem.isSelected}
+                        isMultiOperator={isMultiOperator(operatorSelected?.value || emptyString())}
                       />
                     ))
                   ) : (
@@ -533,7 +646,8 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
         )}
       </div>
     </div>
-  );
+  )
+    ;
 };
 
 export default SmartFiltero;

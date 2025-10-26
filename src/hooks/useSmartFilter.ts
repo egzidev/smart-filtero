@@ -1,8 +1,10 @@
 import {useState} from 'react';
-import {IconType, Item, SelectedItem, SubItem, UseSmartFilterResult} from "@/types";
+import {IconType, Item, Operator, SelectedItem, SubItem, UseSmartFilterResult} from "@/types";
+import {emptyString, isMultiOperator} from "./../utils";
 
 const useSmartFilter = (
   items: Item[],
+  operators?: Operator[],
   excludeSelected: boolean = true,
 ): UseSmartFilterResult => {
 
@@ -21,32 +23,75 @@ const useSmartFilter = (
 
 // Dynamically collect subItems based on selected item
   const subItemsCollector = showSubItems ? showSubItems.subItems || [] : [];
+  const subItemsCollectorNew = showSubItems ? showSubItems.subItemsCollector || [] : [];
 
-  const filteredSubItems = subItemsCollector.filter(subItem =>
-    subItem.label.toLowerCase().includes(query.toLowerCase()) && !isItemSelected(subItem)
-  );
+  const subItemsChange = subItemsCollectorNew.length > 0 ? subItemsCollectorNew : subItemsCollector
 
-  const selectItem = (item: Item, subItem?: SubItem) => {
-    if (subItem) {
-      // If a subitem is selected, update the selected item's subItems
+  const currentOperator = selectedItems.find(sel => sel.value === showSubItems?.value)?.operatorSelected;
+  const isMultiSelectable = currentOperator && ["any", "not-any"].includes(currentOperator.value);
+
+  const filteredSubItems = subItemsChange.filter(subItem =>
+    subItem.label.toLowerCase().includes(query.toLowerCase())
+  ).map(subItem => ({
+    ...subItem,
+    isSelected: isItemSelected(subItem),
+  }));
+
+  const selectItem = ({
+    item,
+    subItem,
+    operator
+  }: {
+    item: Item,
+    subItem?: SubItem,
+    operator?: Operator
+  }) => {
+    if (subItem && !operator) {
       setSelectedItems(prevSelectedItems => prevSelectedItems.map(selectedItem => {
         if (selectedItem.value === item.value) {
-          const updatedSubItems: SubItem[] = [...selectedItem.subItems, subItem];
+          const isMultiSelectable = isMultiOperator(selectedItem.operatorSelected?.value || emptyString());
+
+          const alreadyExists = selectedItem.subItems.some(s => s.value === subItem.value);
+
+          let updatedSubItems: SubItem[] = [];
+
+          if (isMultiSelectable) {
+            if (alreadyExists) {
+              updatedSubItems = selectedItem.subItems;
+            } else {
+              updatedSubItems = [...selectedItem.subItems, subItem];
+            }
+          } else {
+            // In single-select mode, we replace
+            updatedSubItems = [subItem];
+          }
+
+          if (!isMultiSelectable) {
+            setShowSubItems(null);
+          } else {
+
+          }
           return {
             ...selectedItem,
             subItems: updatedSubItems,
+            subItemsCollector: selectedItem.subItemsCollector, // if you use this prop
+            subItemSelected: subItem,
+            operatorSelected: selectedItem.operatorSelected,
+            tempSelected: false,
           };
         }
         return selectedItem;
       }));
-    } else {
+    } else if (item && !operator) {
       // If no subitem, create a new SelectedItem with empty subItems
       const newItem: SelectedItem = {
         value: item.value,
         label: item.label ?? '',
         icon: item.icon ?? null, // Ensure icon is passed
         typed: item.typed ?? false,
+        subItemsCollector: item.subItems,
         subItems: [],
+        tempSelected: true,
       };
 
       setSelectedItems(prevSelectedItems => [...prevSelectedItems, newItem]);
@@ -54,8 +99,87 @@ const useSmartFilter = (
       if (item.typed) {
         setQuery('');
       }
+    } else if (item && operator) {
+      const isMultiSelectable = isMultiOperator(operator?.value || emptyString())
+
+      setSelectedItems(prevSelectedItems => {
+        console.log('prevSelectedItems', prevSelectedItems)
+        return prevSelectedItems.map(selectedItem => {
+          if (selectedItem.value === item.value) {
+            // If item has no subItems and operator is multi-select, add item as a virtual subItem
+            // if (isMultiSelectable && (!item.subItems || item.subItems.length === 0)) {
+            //   const alreadyExists = selectedItem.subItems.some(sub => sub.value === item.value);
+            //   const updatedSubItems = alreadyExists
+            //     ? selectedItem.subItems
+            //     : [
+            //       ...selectedItem.subItems, {
+            //         value: item.value,
+            //         label: item.label ?? '',
+            //         icon: item.icon ?? null,
+            //       }
+            //     ];
+            //
+            //   return {
+            //     ...selectedItem,
+            //     subItems: updatedSubItems,
+            //     subItemSelected: {
+            //       value: item.value,
+            //       label: item.label ?? '',
+            //       icon: item.icon ?? null,
+            //     },
+            //     operatorSelected: operator,
+            //   };
+            // }
+
+            // If not multi-select logic or item has real subItems
+            if (!isMultiSelectable && selectedItem.subItems?.length > 1) {
+              return {
+                ...selectedItem,
+                // subItemsCollector: selectedItem.subItemsCollectors,
+                subItems: [],
+                subItemSelected: null,
+                operatorSelected: operator,
+                tempSelected: true,
+              };
+            } else {
+              return {
+                ...selectedItem,
+                subItems: [...selectedItem.subItems],
+                subItemSelected: selectedItem.subItemSelected,
+                // subItemsCollector: selectedItem.subItemsCollectors,
+                operatorSelected: operator,
+                tempSelected: false,
+              };
+            }
+
+          }
+
+
+          return selectedItem;
+        });
+      });
     }
-    setShowSubItems(null);
+
+    // else if (false) {
+    //   setSelectedItems(prevSelectedItems => prevSelectedItems.map(selectedItem => {
+    //     if (selectedItem.value === item.value) {
+    //       console.log({
+    //         subItems: [...selectedItem.subItems],
+    //         subItemSelected: subItem,
+    //         operatorSelected: operator
+    //       })
+    //       return {
+    //         ...selectedItem,
+    //         subItems: [...selectedItem.subItems],
+    //         subItemSelected: selectedItem.subItemSelected,
+    //         operatorSelected: operator,
+    //       }
+    //     }
+    //     return selectedItem;
+    //   }));
+    // }
+
+    // setShowSubItems(null);
   };
 
   const selectItemFromUrl = (item: Item, subItem?: SubItem | { label: string; icon: IconType }) => {
@@ -143,10 +267,30 @@ const useSmartFilter = (
      else return [];
    };*/
 
-  const handleSelect = (item: Item) => {
-    selectItem(item);
+  const handleSelect = ({
+    item,
+    operator,
+  }: {
+    item: Item;
+    operator?: Operator;
+  }) => {
+    if (operator) {
+      selectItem({
+        item,
+        operator,
+      });
+    } else {
+      selectItem({
+        item,
+      });
+    }
+
     setShowSubItems(!item.typed ? item : null);
   };
+
+  const changeSelectSubItem = (item: Item) => {
+    setShowSubItems(item);
+  }
 
   const resetSelectedItems = () => {
     setQuery('');
@@ -171,7 +315,8 @@ const useSmartFilter = (
     showSubItems,
     handleSelect,
     resetSelectedItems,
-    resetSubItems
+    resetSubItems,
+    changeSelectSubItem
   };
 };
 

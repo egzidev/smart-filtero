@@ -103,6 +103,14 @@
     background-color: var(--dropdown-hover-bg);
 }
 
+.dropdownItemChecked {
+    margin-left: auto;
+    flex-shrink: 0;
+    display: block;
+    vertical-align: middle;
+
+}
+
 .noItemsFound, .loadItems {
     padding: 0.5rem 0.75rem;
     font-size: 14px;
@@ -146,4 +154,5 @@
     align-items: center;
     white-space: nowrap;
     cursor: text;
+    flex-shrink: 0;
 }

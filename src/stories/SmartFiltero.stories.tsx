@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Meta, StoryFn} from '@storybook/react';
 import SmartFiltero from "./../components/SmartFiltero";
-import {Item, SmartFilteroProps} from '@/types';
+import {Item, SmartFilteroProps, SubItem} from '@/types';
 import {User, Tag, CircleX, Clock, CheckCircle} from 'lucide-react';
 import './style.css';
 
@@ -28,10 +28,6 @@ const items = [
     value: 'status',
     label: 'Status',
     icon: Tag,
-    onClick: (item: any, subItem: any) => {
-      console.log('Clicked Item:', item.value);
-      console.log('Clicked SubItem:', subItem.value);
-    },
     subItems: [
       {
         value: 'cancel',
@@ -92,6 +88,69 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
     customer_username: fetchCustomers,
   };
 
+  const onClickStatusPaid = (item: Item, subItem: SubItem) => {
+    // console.log(`[SELECTED] ${item.label} → ${subItem.label}`);
+
+    // Example 1: Trigger special behavior for "status: paid"
+    if (item.value === 'status' && subItem.value === 'paid') {
+      console.log('Triggering discount logic for paid orders...');
+
+      const updatedItems = filterItems.map((filterItem) => {
+        if (filterItem.value === 'city' && filterItem.subItems) {
+          return {
+            ...filterItem,
+            subItems: filterItem.subItems.map((sub) =>
+              sub.value === 'new_york'
+                ? {...sub, value: 'egzi', label: 'Egzi'}
+                : sub
+            ),
+          };
+        }
+        return filterItem;
+      });
+      setFilterItems(updatedItems);
+    }
+
+    if (item.value === 'status' && subItem.value === 'cancel') {
+      setFilterItems(prevItems => {
+        return [
+          ...prevItems,
+          {
+            value: 'doctor',
+            label: 'Doctor',
+            icon: Tag,
+            subItems: [
+              {
+                value: 'doctor_1',
+                label: 'Doctor 1',
+                icon: Tag,
+              }
+            ],
+          }
+        ]
+      })
+    }
+  }
+
+  const onClickRemoveStatusPaid = (item: Item, subItem: SubItem) => {
+    // console.log(`[REMOVED] ${item.label} → ${subItem.label}`);
+
+    // Example 1: Revert modified data
+    if (item.value === 'status' && subItem.value === 'paid') {
+      console.log('Reverting city names back to original...');
+      // remove doctor item
+      setFilterItems(items)
+    }
+
+    if (item.value === 'status' && subItem.value === 'cancel') {
+      console.log('Reverting city names back to original...');
+      // remove doctor item
+      setFilterItems(prevItems => {
+        return prevItems.filter(item => item.value !== 'doctor');
+      })
+    }
+  }
+
   return (
     <div>
       {/* Render SmartFiltero */}
@@ -99,43 +158,19 @@ const AsyncTemplate: StoryFn<SmartFilteroProps> = (args) => {
         {...args}
         items={filterItems}
         fetchFunctions={fetchFunctions}
-        onItemClick={(item, subItem) => {
-          console.log(`[SELECTED] ${item.label} → ${subItem.label}`);
-
-          // Example 1: Trigger special behavior for "status: paid"
-          if (item.value === 'status' && subItem.value === 'paid') {
-            console.log('Triggering discount logic for paid orders...');
-
-            const updatedItems = filterItems.map((filterItem) => {
-              if (filterItem.value === 'city' && filterItem.subItems) {
-                return {
-                  ...filterItem,
-                  subItems: filterItem.subItems.map((sub) =>
-                    sub.value === 'new_york'
-                      ? { ...sub, value: 'egzi', label: 'Egzi' }
-                      : sub
-                  ),
-                };
-              }
-              return filterItem;
-            });
-
-            setFilterItems(updatedItems);
-          }
-        }}
-        onItemRemoveClick={(item, subItem) => {
-          console.log(`[REMOVED] ${item.label} → ${subItem.label}`);
-
-          // Example 1: Revert modified data
-          if (item.value === 'status' && subItem.value === 'paid') {
-            console.log('Reverting city names back to original...');
-            setFilterItems(items); // reset to initial state
-          }
-        }}
+        // onItemClick={onClickStatusPaid}
+        // onItemRemoveClick={onClickRemoveStatusPaid}
         onChangeSelection={(items) => {
           // console.log('Selected Items:', items);
-          setSelectedItems([...items]);
+          setSelectedItems(items.map(item => ({ ...item })))
+          // setSelectedItems(prevItems => prevItems);
         }}
+        operators={[
+          {value: 'is', label: 'is'},
+          {value: 'is-not', label: 'is not'},
+          {value: 'any', label: 'any of'},
+          {value: 'not-any', label: 'not any of'},
+        ]}
       />
 
       {/* Display Selected Items */}

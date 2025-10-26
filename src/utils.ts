@@ -1,3 +1,5 @@
+import {Item as ItemProps} from "@/types";
+
 export const transformLabelToQueryParam = (label: string) => {
   return label.toLowerCase().replace(/\s+/g, '_');
 };
@@ -38,3 +40,15 @@ export const updateURLParams = (paramsObject: Record<string, string | null>) => 
   // Replace the current URL with the updated query parameters
   window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
 };
+
+export const emptyString = () => '';
+
+export const isMultiOperator = (operator: string) => {
+  return operator && ["any", "not-any"].includes(operator);
+}
+
+export const hasSearchUrl = (collectionRef: React.MutableRefObject<{ id: string; value: string }[]>) => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasSearchParam = urlParams.has('search');
+  return !hasSearchParam && !collectionRef.current.some(item => item.id.startsWith('search'))
+}
