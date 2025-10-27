@@ -10,7 +10,7 @@ const SelectedText: React.FC<SelectedItemCmp> = ({
   return (
     <div className={validateStyle('selectedText')}>
       <span>{item.label}</span>
-      <div className={validateStyle('removeIcon')} onClick={() => removeItem(item.value)}>
+      <div className={validateStyle('removeIcon')} onClick={() => removeItem?.(item.value)}>
         <X size={16}/>
       </div>
     </div>

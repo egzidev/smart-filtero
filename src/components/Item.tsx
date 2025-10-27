@@ -1,6 +1,7 @@
 import React from "react";
 import {ItemCmp} from "@/types";
-import {CheckIcon, Square, SquareCheck} from "lucide-react";
+import {CheckIcon} from "lucide-react";
+import {CheckboxEmpty, CheckboxFilled} from "./CheckboxIcons";
 
 const Item: React.FC<ItemCmp> = ({
   label,
@@ -32,10 +33,10 @@ const Item: React.FC<ItemCmp> = ({
       {icon && getIcon(icon)}
       {label}{' '}{isTyped && <>{query}</>}
       {isMultiOperator && isSelected && (
-        <span className={validateStyle('dropdownItemChecked')}>{getIcon(SquareCheck, 16)}</span>
+        <span className={validateStyle('dropdownItemChecked')}><CheckboxFilled size={15} /></span>
       )}
       {isMultiOperator && !isSelected && (
-        <span className={validateStyle('dropdownItemChecked')}>{getIcon(Square, 16)}</span>
+        <span className={validateStyle('dropdownItemChecked')}><CheckboxEmpty size={15} /></span>
       )}
       {!isMultiOperator && isSelected &&
         <span className={validateStyle('dropdownItemChecked')}>{getIcon(CheckIcon, 16)}</span>}

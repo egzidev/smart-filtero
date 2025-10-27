@@ -2,12 +2,12 @@ import {X} from "lucide-react";
 import React from "react";
 import {SelectedSubItemCmp} from "@/types";
 
-const SelectedSubItem: React.FC<SelectedSubItemCmp> = ({
+const SelectedSubItem = React.forwardRef<HTMLDivElement, SelectedSubItemCmp>(({
   item,
   removeItem,
   validateStyle,
   onClick
-}) => {
+}, ref) => {
 
   const getIcon = (
     icon: React.ComponentType<any> | React.ReactElement
@@ -18,6 +18,24 @@ const SelectedSubItem: React.FC<SelectedSubItemCmp> = ({
     const Icon = icon as React.ComponentType<any>;
     return <Icon size={14} />;
   };
+
+  // Handle empty state - show placeholder
+  if (!item.subItems || item.subItems.length === 0) {
+    return (
+      <div ref={ref} className={validateStyle('selectedSubItem')} onClick={onClick}>
+        <span>Select {item.label}</span>
+        <div
+          className={validateStyle('removeIcon')}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent triggering onClick
+            removeItem(item.value); // Remove entire parent item
+          }}
+        >
+          <X size={16}/>
+        </div>
+      </div>
+    );
+  }
 
   return (
     item.subItems &&
@@ -39,6 +57,8 @@ const SelectedSubItem: React.FC<SelectedSubItemCmp> = ({
       </div>
     ))
   );
-}
+});
+
+SelectedSubItem.displayName = 'SelectedSubItem';
 
 export default SelectedSubItem;

@@ -5,8 +5,8 @@ export type StyleValidator = (style: string) => string;
 export type InputFocusHandler = (e: React.FocusEvent<HTMLInputElement>) => void;
 export type InputChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => void;
 export type MaybeAsync<T> = T | Promise<T>;
-export type RemoveItemHandler = (selectedItemValue: string, selectedSubItemValue?: string) => void;
-export type RemoveItemByValueHandler = (selectedItem: string, subItem?: string) => void;
+export type RemoveItemHandler = (selectedItemValue: string, selectedSubItemValue?: string, keepEmpty?: boolean) => void;
+export type RemoveItemByValueHandler = (selectedItem: string, subItem?: string, keepEmpty?: boolean) => void;
 export type OperatorValue = 'is' | 'is-not' | 'any' | 'not-any';
 
 export interface BaseItem {
@@ -27,6 +27,7 @@ export interface Item extends BaseItem {
   typed?: boolean;
   item?: string;
   subItems?: SubItem[];
+  subItemsCollector?: SubItem[];
   debounceDelay?: number;
   onClick?: (item: Item, subItem: SubItem) => void;
 }
@@ -80,7 +81,7 @@ export interface QueryItemCmp extends WithChildren {
 
 export interface SelectedItemCmp {
   item: Item;
-  removeItem: RemoveItemHandler;
+  removeItem?: RemoveItemHandler;
   validateStyle: (style: string) => string
 }
 
@@ -103,6 +104,7 @@ export interface SelectedItem extends BaseItem {
   subItems: SubItem[];
   subItemsCollector?: SubItem[];
   tempSelected?: boolean;
+  subItemSelected?: SubItem | null;
 }
 
 // Define the hook's return type

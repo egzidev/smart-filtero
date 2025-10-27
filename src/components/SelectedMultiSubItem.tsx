@@ -2,12 +2,12 @@ import {X} from "lucide-react";
 import React from "react";
 import {SelectedSubItemCmp} from "@/types";
 
-const SelectedMultiSubItem: React.FC<SelectedSubItemCmp> = ({
+const SelectedMultiSubItem = React.forwardRef<HTMLDivElement, SelectedSubItemCmp>(({
   item,
   removeItem,
   validateStyle,
   onClick
-}) => {
+}, ref) => {
 
   const getIcon = (
     icon: React.ComponentType<any> | React.ReactElement
@@ -19,12 +19,34 @@ const SelectedMultiSubItem: React.FC<SelectedSubItemCmp> = ({
     return <Icon size={14}/>;
   };
 
-  if (item.subItems && item.subItems.length > 1) {
+  // Handle empty state - show placeholder
+  if (!item.subItems || item.subItems.length === 0) {
     return (
-      <div className={validateStyle('selectedSubItem')} onClick={onClick}>
-        <span>{item.subItems.length} selected</span>
+      <div ref={ref} className={validateStyle('selectedSubItem')} onClick={onClick}>
+        <span>Select {item.label}</span>
         <div
           className={validateStyle('removeIcon')}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent triggering onClick
+            removeItem(item.value); // Remove entire parent item
+          }}
+        >
+          <X size={16}/>
+        </div>
+      </div>
+    );
+  }
+
+  if (item.subItems && item.subItems.length > 1) {
+    return (
+      <div className={validateStyle('selectedSubItem')}>
+        <span onClick={onClick}>{item.subItems.length} selected</span>
+        <div
+          className={validateStyle('removeIcon')}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent triggering onClick
+            removeItem(item.value); // Remove entire parent item with all subitems
+          }}
         >
           <X size={16}/>
         </div>
@@ -53,6 +75,8 @@ const SelectedMultiSubItem: React.FC<SelectedSubItemCmp> = ({
     )
   }
 
-}
+});
+
+SelectedMultiSubItem.displayName = 'SelectedMultiSubItem';
 
 export default SelectedMultiSubItem;

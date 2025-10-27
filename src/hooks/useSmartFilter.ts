@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {IconType, Item, Operator, SelectedItem, SubItem, UseSmartFilterResult} from "@/types";
-import {emptyString, isMultiOperator} from "./../utils";
+import {emptyString, isMultiOperator, isSameOperatorType} from "./../utils";
 
 const useSmartFilter = (
   items: Item[],
@@ -27,12 +27,9 @@ const useSmartFilter = (
 
   const subItemsChange = subItemsCollectorNew.length > 0 ? subItemsCollectorNew : subItemsCollector
 
-  const currentOperator = selectedItems.find(sel => sel.value === showSubItems?.value)?.operatorSelected;
-  const isMultiSelectable = currentOperator && ["any", "not-any"].includes(currentOperator.value);
-
-  const filteredSubItems = subItemsChange.filter(subItem =>
+  const filteredSubItems = subItemsChange.filter((subItem: SubItem) =>
     subItem.label.toLowerCase().includes(query.toLowerCase())
-  ).map(subItem => ({
+  ).map((subItem: SubItem) => ({
     ...subItem,
     isSelected: isItemSelected(subItem),
   }));
@@ -46,7 +43,43 @@ const useSmartFilter = (
     subItem?: SubItem,
     operator?: Operator
   }) => {
-    if (subItem && !operator) {
+    if (subItem && operator) {
+            // Handle subitem selection with operator (multi-select scenario)
+      setSelectedItems(prevSelectedItems => prevSelectedItems.map(selectedItem => {
+        if (selectedItem.value === item.value) {
+          const isMultiSelectable = isMultiOperator(operator?.value || emptyString());
+
+          const alreadyExists = selectedItem.subItems.some(s => s.value === subItem.value);
+
+          let updatedSubItems: SubItem[] = [];
+
+          if (isMultiSelectable) {
+            if (alreadyExists) {
+              updatedSubItems = selectedItem.subItems;
+            } else {
+              updatedSubItems = [...selectedItem.subItems, subItem];
+            }
+          } else {
+            // In single-select mode, we replace
+            updatedSubItems = [subItem];
+          }
+
+          if (!isMultiSelectable) {
+            setShowSubItems(null);
+          }
+
+          return {
+            ...selectedItem,
+            subItems: updatedSubItems,
+            subItemsCollector: selectedItem.subItemsCollector,
+            subItemSelected: subItem,
+            operatorSelected: operator, // Use the provided operator
+            tempSelected: updatedSubItems.length === 0, // Keep tempSelected true if no subitems
+          };
+        }
+        return selectedItem;
+      }));
+    } else if (subItem && !operator) {
       setSelectedItems(prevSelectedItems => prevSelectedItems.map(selectedItem => {
         if (selectedItem.value === item.value) {
           const isMultiSelectable = isMultiOperator(selectedItem.operatorSelected?.value || emptyString());
@@ -77,13 +110,16 @@ const useSmartFilter = (
             subItemsCollector: selectedItem.subItemsCollector, // if you use this prop
             subItemSelected: subItem,
             operatorSelected: selectedItem.operatorSelected,
-            tempSelected: false,
+            tempSelected: updatedSubItems.length === 0, // Keep tempSelected true if no subitems
           };
         }
         return selectedItem;
       }));
     } else if (item && !operator) {
       // If no subitem, create a new SelectedItem with empty subItems
+      // Determine default operator from global operators or item-specific operators
+      const defaultOperator = operators?.[0] || item.operators?.[0] || null;
+      
       const newItem: SelectedItem = {
         value: item.value,
         label: item.label ?? '',
@@ -92,6 +128,8 @@ const useSmartFilter = (
         subItemsCollector: item.subItems,
         subItems: [],
         tempSelected: true,
+        operatorSelected: defaultOperator, // Set default operator if available
+        operators: item.operators || operators,
       };
 
       setSelectedItems(prevSelectedItems => [...prevSelectedItems, newItem]);
@@ -100,60 +138,37 @@ const useSmartFilter = (
         setQuery('');
       }
     } else if (item && operator) {
-      const isMultiSelectable = isMultiOperator(operator?.value || emptyString())
+      const newIsMultiSelectable = isMultiOperator(operator?.value || emptyString());
 
       setSelectedItems(prevSelectedItems => {
-        console.log('prevSelectedItems', prevSelectedItems)
         return prevSelectedItems.map(selectedItem => {
           if (selectedItem.value === item.value) {
-            // If item has no subItems and operator is multi-select, add item as a virtual subItem
-            // if (isMultiSelectable && (!item.subItems || item.subItems.length === 0)) {
-            //   const alreadyExists = selectedItem.subItems.some(sub => sub.value === item.value);
-            //   const updatedSubItems = alreadyExists
-            //     ? selectedItem.subItems
-            //     : [
-            //       ...selectedItem.subItems, {
-            //         value: item.value,
-            //         label: item.label ?? '',
-            //         icon: item.icon ?? null,
-            //       }
-            //     ];
-            //
-            //   return {
-            //     ...selectedItem,
-            //     subItems: updatedSubItems,
-            //     subItemSelected: {
-            //       value: item.value,
-            //       label: item.label ?? '',
-            //       icon: item.icon ?? null,
-            //     },
-            //     operatorSelected: operator,
-            //   };
-            // }
+            // Check if we're switching between operator types (multi <-> single)
+            const operatorTypeChanged = !isSameOperatorType(
+              selectedItem.operatorSelected?.value || emptyString(),
+              operator?.value || emptyString()
+            );
 
-            // If not multi-select logic or item has real subItems
-            if (!isMultiSelectable && selectedItem.subItems?.length > 1) {
+            if (operatorTypeChanged) {
+              // Reset subitems when switching between multi/single operator types
               return {
                 ...selectedItem,
-                // subItemsCollector: selectedItem.subItemsCollectors,
                 subItems: [],
                 subItemSelected: null,
                 operatorSelected: operator,
                 tempSelected: true,
               };
             } else {
+              // Same operator type, keep existing subitems and just update operator
               return {
                 ...selectedItem,
                 subItems: [...selectedItem.subItems],
                 subItemSelected: selectedItem.subItemSelected,
-                // subItemsCollector: selectedItem.subItemsCollectors,
                 operatorSelected: operator,
-                tempSelected: false,
+                tempSelected: selectedItem.subItems.length === 0,
               };
             }
-
           }
-
 
           return selectedItem;
         });
@@ -227,36 +242,77 @@ const useSmartFilter = (
   };
 
 
-  const removeItem = (itemValue: string, subItemValue?: string) => {
+  const removeItem = (itemValue: string, subItemValue?: string, keepEmpty: boolean = false) => {
+    console.log('🪝 useSmartFilter.removeItem called:', { itemValue, subItemValue, keepEmpty });
+    
     setSelectedItems(prevSelectedItems => {
+      console.log('📋 Previous selectedItems:', prevSelectedItems.map(item => ({
+        value: item.value,
+        label: item.label,
+        subItems: item.subItems.length,
+        tempSelected: item.tempSelected,
+        operator: item.operatorSelected?.value
+      })));
+      
       // Filter out null values and handle sub-item removal
-      return prevSelectedItems.reduce<SelectedItem[]>((accumulator, selectedItem) => {
+      const result = prevSelectedItems.reduce<SelectedItem[]>((accumulator, selectedItem) => {
         if (!selectedItem) return accumulator; // Skip null or undefined items
 
         if (selectedItem.value === itemValue) {
+          console.log('✅ Found matching item:', selectedItem.value);
+          
           if (subItemValue) {
-            // Filter out the specific subItem based on value using reduce
+            console.log('🔍 Filtering out subItem:', subItemValue);
+            // Removing a specific subItem - filter it out
             const filteredSubItems = selectedItem.subItems.reduce<SubItem[]>((subAccumulator, subItem) => {
               if (subItem.value !== subItemValue) {
                 subAccumulator.push(subItem);
               }
               return subAccumulator;
             }, []);
+            
+            console.log('📊 Filtered subItems count:', filteredSubItems.length);
+            console.log('🔢 selectedItem.typed:', selectedItem.typed);
+            console.log('🔢 keepEmpty:', keepEmpty);
 
-            // Only push the item if there are remaining subItems
-            if (selectedItem.typed || filteredSubItems.length > 0) {
-              accumulator.push({...selectedItem, subItems: filteredSubItems});
+            // Only keep the item if it's typed OR has remaining subItems
+            // Don't keep empty items even if keepEmpty is true (to prevent showing placeholders after removal)
+            const shouldKeep = selectedItem.typed || filteredSubItems.length > 0;
+            console.log('❓ Should keep item?', shouldKeep);
+            
+            if (shouldKeep) {
+              const updatedItem = {
+                ...selectedItem, 
+                subItems: filteredSubItems,
+                tempSelected: filteredSubItems.length === 0 // Set tempSelected true when empty
+              };
+              console.log('✅ Keeping item with tempSelected:', updatedItem.tempSelected);
+              accumulator.push(updatedItem);
+            } else {
+              console.log('❌ Not keeping item (will be removed completely - no subItems left)');
             }
+          } else {
+            console.log('🗑️ No subItemValue - removing entire parent item');
           }
+          // If no subItemValue provided, we're removing the entire parent item
+          // Don't add it to accumulator (this removes it completely)
         } else {
-          // Apply the filter logic without using filter
-          if (selectedItem.typed || selectedItem.subItems.length > 0 || !selectedItem.subItems) {
-            accumulator.push(selectedItem);
-          }
+          // Different item - keep it in the list
+          accumulator.push(selectedItem);
         }
 
         return accumulator;
       }, []);
+      
+      console.log('📋 New selectedItems:', result.map(item => ({
+        value: item.value,
+        label: item.label,
+        subItems: item.subItems.length,
+        tempSelected: item.tempSelected,
+        operator: item.operatorSelected?.value
+      })));
+      
+      return result;
     });
   };
 

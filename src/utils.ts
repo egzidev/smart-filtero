@@ -1,5 +1,3 @@
-import {Item as ItemProps} from "@/types";
-
 export const transformLabelToQueryParam = (label: string) => {
   return label.toLowerCase().replace(/\s+/g, '_');
 };
@@ -45,6 +43,15 @@ export const emptyString = () => '';
 
 export const isMultiOperator = (operator: string) => {
   return operator && ["any", "not-any"].includes(operator);
+}
+
+export const isSingleOperator = (operator: string) => {
+  return operator && ["is", "is-not"].includes(operator);
+}
+
+export const isSameOperatorType = (operator1: string, operator2: string) => {
+  return (isMultiOperator(operator1) && isMultiOperator(operator2)) || 
+         (isSingleOperator(operator1) && isSingleOperator(operator2));
 }
 
 export const hasSearchUrl = (collectionRef: React.MutableRefObject<{ id: string; value: string }[]>) => {
