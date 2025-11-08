@@ -216,7 +216,9 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
 
     // Update collection for item selection
     const defaultOperator = operators ? operators[0] : null;
-    const newItem = {id: item.value, value: item.value, operator: defaultOperator};
+    const newItem = operators && defaultOperator 
+      ? {id: item.value, value: item.value, operator: defaultOperator}
+      : {id: item.value, value: item.value};
     
     // Add to collection if it's a typed item (search)
     if (item.typed) {
@@ -235,8 +237,10 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     // Get the currently active operator for this item group using the same logic as rendering
     const activeOperator = getCurrentOperatorForRendering();
 
-    // Create the new collection entry
-    const newItem = {id: showSubItems.value, value: subItem.value, operator: activeOperator};
+    // Create the new collection entry - only include operator if it exists
+    const newItem = activeOperator 
+      ? {id: showSubItems.value, value: subItem.value, operator: activeOperator}
+      : {id: showSubItems.value, value: subItem.value};
 
     // Update collection based on operator type
     const isMulti = isMultiOperator(activeOperator?.value || emptyString());
@@ -357,7 +361,13 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
       // Same operator type, just update the operator for existing items
       collectionRef.current = collectionRef.current.map(entry => {
         if (entry.id === item.value) {
-          return { ...entry, operator: selectedOperator };
+          // Only include operator if it exists
+          return selectedOperator 
+            ? { ...entry, operator: selectedOperator }
+            : (() => {
+                const { operator, ...rest } = entry;
+                return rest;
+              })();
         }
         return entry;
       });
@@ -781,7 +791,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   const isCurrentOperatorMulti = isMultiOperator(getCurrentOperatorForRendering()?.value || emptyString());
 
   // Debug state
-  const [showDebug, setShowDebug] = useState(true);
+  const [showDebug, setShowDebug] = useState(false);
 
   return (
     <>
@@ -910,6 +920,31 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
         )}
       </div>
     </div>
+    
+    {/* Debug Panel Toggle Button */}
+    {!showDebug && (
+      <button
+        onClick={() => setShowDebug(true)}
+        style={{
+          position: 'fixed',
+          bottom: '16px',
+          right: '16px',
+          background: 'rgba(0, 0, 0, 0.8)',
+          border: '1px solid #00ff00',
+          color: '#00ff00',
+          cursor: 'pointer',
+          padding: '8px 12px',
+          fontSize: '12px',
+          fontFamily: 'monospace',
+          borderRadius: '4px',
+          zIndex: 9998,
+          boxShadow: '0 2px 8px rgba(0, 255, 0, 0.3)'
+        }}
+        title="Show Debug Panel"
+      >
+        🐛 Debug
+      </button>
+    )}
     
     {/* Debug Panel */}
     {showDebug && (
