@@ -39,14 +39,10 @@ const SelectedMultiSubItem = React.forwardRef<HTMLDivElement, SelectedSubItemCmp
 
   if (item.subItems && item.subItems.length > 1) {
     return (
-      <div className={validateStyle('selectedSubItem')}>
-        <span onClick={onClick}>{item.subItems.length} selected</span>
+      <div className={validateStyle('selectedSubItem')} onClick={onClick}>
+        <span>{item.subItems.length} selected</span>
         <div
           className={validateStyle('removeIcon')}
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent triggering onClick
-            removeItem(item.value); // Remove entire parent item with all subitems
-          }}
         >
           <X size={16}/>
         </div>

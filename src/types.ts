@@ -69,6 +69,11 @@ export interface SubItemsCmp extends WithChildren {
   showSubItems: Item | null;
   isFocused: boolean;
   validateStyle: StyleValidator;
+  subItemQuery?: string;
+  subItemInputRef?: React.RefObject<HTMLInputElement>;
+  handleSubItemInputChange?: InputChangeHandler;
+  inputPlaceholder?: string;
+  subItemInputPlaceholder?: string;
 }
 
 export interface QueryItemCmp extends WithChildren {
@@ -141,18 +146,26 @@ export interface FetchFunctions {
 export interface StyleThemeProps {
   container?: string;
   inputContainer?: string;
-  dropdownContainer?: string;
-  dropdownItemContainer?: string;
-  dropdownSubItemContainer?: string;
   selectedItemsContainer?: string;
   selectedItemsWrapper?: string;
   selectedItem?: string;
   selectedText?: string;
   selectedSubItem?: string;
+  selectedSubItemIcon?: string;
   removeIcon?: string;
   searchInput?: string;
+  dropdownContainer?: string;
+  operatorDropdownContainer?: string;
+  dropdownItemContainer?: string;
+  dropdownSubItemWrapper?: string;
+  dropdownSubItemList?: string;
+  dropdownSubItemSearch?: string;
+  dropdownSubItemSearchInput?: string;
+  dropdownSubItemSearchIcon?: string;
+  operatorDropdownItemContainer?: string;
   queryItem?: string;
   dropdownItem?: string;
+  dropdownItemChecked?: string;
   noItemsFound?: string;
   loadItems?: string;
   clearFilterButton?: string;
@@ -172,6 +185,7 @@ interface BaseSmartFilteroProps {
   onChangeSelection: (items: { id: string; value: string }[]) => void;
   withUrl?: boolean;
   inputPlaceholder?: string;
+  subItemInputPlaceholder?: string;
   searchItem?: {
     label: string;
     icon?: React.ComponentType<any> | React.ReactElement | null

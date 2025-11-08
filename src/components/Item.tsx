@@ -29,6 +29,7 @@ const Item: React.FC<ItemCmp> = ({
     <li
       className={isTyped ? validateStyle('queryItem') : validateStyle('dropdownItem')}
       onClick={onClick}
+      data-selected={isSelected ? "true" : "false"}
     >
       {icon && getIcon(icon)}
       {label}{' '}{isTyped && <>{query}</>}

@@ -43,6 +43,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   onChangeSelection,
   withUrl = false,
   inputPlaceholder = 'Search or filter by...',
+  subItemInputPlaceholder = 'Type to search...',
   searchItem = {
     label: 'Search for this text',
     icon: Type,
@@ -101,6 +102,8 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   const [isDropdownVisible, setIsDropdownVisible] = useState<boolean>(false);
   const [operatorSelected, setOperatorSelected] = useState<Operator>(null);
   const [dropdownSource, setDropdownSource] = useState<'input' | 'subitem' | null>(null); // Track what triggered the dropdown
+  const [subItemQuery, setSubItemQuery] = useState<string>(''); // Search query for subitems
+  const subItemInputRef = useRef<HTMLInputElement>(null);
 
   const recalculatePosition = useCallback((): Promise<void> => {
     return new Promise((resolve) => {
@@ -163,6 +166,7 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     setSubItemDropdownPosition(null);
     tempSelectedRef.current = null; // Clear the temp selected ref to ensure dropdown aligns to input
     resetSubItems();
+    setSubItemQuery(''); // Clear subitem query when resetting
     setDropdownSource('input'); // Mark that dropdown is triggered from input
     
     recalculatePosition().then(() => {
@@ -185,19 +189,26 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
     const newQuery = e.target.value;
     setQuery(newQuery);
     setIsFocused(true);  // Re-focus the dropdown when typing
+    // Don't trigger async fetch here - that's handled in subitem search
+  };
+
+  const handleSubItemInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSubItemQuery = e.target.value;
+    setSubItemQuery(newSubItemQuery);
 
     if (showSubItems?.isAsync) {
       // Check if there are matching subitems first
       const hasMatchingSubItems = filteredSubItems.some((subItem: any) =>
-        subItem.value.includes(newQuery.toLowerCase())
+        subItem.label?.toLowerCase().includes(newSubItemQuery.toLowerCase()) ||
+        subItem.value?.toLowerCase().includes(newSubItemQuery.toLowerCase())
       );
 
-      const isDeleting = newQuery.length < query.length; // Detect backspace
+      const isDeleting = newSubItemQuery.length < subItemQuery.length; // Detect backspace
 
       // Fetch only if there are no matches OR if deleting characters
       if (!hasMatchingSubItems || isDeleting) {
         setIsSearching(true);
-        fetchDebounceOnQuery(showSubItems, newQuery, (response) => {
+        fetchDebounceOnQuery(showSubItems, newSubItemQuery, (response) => {
           setHasResults(response.length > 0);
           setIsSearching(false);
         });
@@ -236,6 +247,12 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
 
     // Get the currently active operator for this item group using the same logic as rendering
     const activeOperator = getCurrentOperatorForRendering();
+    const isMulti = isMultiOperator(activeOperator?.value || emptyString());
+    
+    // Clear subitem query after selection (for non-multi operators)
+    if (!isMulti) {
+      setSubItemQuery('');
+    }
 
     // Create the new collection entry - only include operator if it exists
     const newItem = activeOperator 
@@ -243,7 +260,6 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
       : {id: showSubItems.value, value: subItem.value};
 
     // Update collection based on operator type
-    const isMulti = isMultiOperator(activeOperator?.value || emptyString());
     
     if (!isMulti) {
       // For single operators ("is", "is not"), replace any existing item with same id
@@ -557,6 +573,9 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
   useUpdateEffect(() => {
     if (showSubItems?.isAsync) {
       fetchInitial(showSubItems);
+      setSubItemQuery(''); // Clear subitem query when switching items
+    } else {
+      setSubItemQuery(''); // Clear subitem query when switching to non-async items
     }
   }, [showSubItems]);
 
@@ -790,6 +809,14 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
 
   const isCurrentOperatorMulti = isMultiOperator(getCurrentOperatorForRendering()?.value || emptyString());
 
+  // Filter subitems using subItemQuery (separate from main query)
+  const filteredSubItemsWithQuery = subItemQuery 
+    ? filteredSubItems.filter((subItem: any) =>
+        subItem.label?.toLowerCase().includes(subItemQuery.toLowerCase()) ||
+        subItem.value?.toLowerCase().includes(subItemQuery.toLowerCase())
+      )
+    : filteredSubItems;
+
   // Debug state
   const [showDebug, setShowDebug] = useState(false);
 
@@ -885,11 +912,17 @@ const SmartFiltero: React.FC<SmartFilteroProps> = ({
                 </Items>
 
                 {/* Sub items */}
-                <SubItems {...coreContainerProps}>
+                <SubItems 
+                  {...coreContainerProps}
+                  subItemQuery={subItemQuery}
+                  subItemInputRef={subItemInputRef}
+                  handleSubItemInputChange={handleSubItemInputChange}
+                  subItemInputPlaceholder={subItemInputPlaceholder}
+                >
                   {isLoading || isSearching ? (
                     <li className={validateStyle('loadItems')}>{loadingText}</li>
-                  ) : filteredSubItems.length > 0 || hasResults ? (
-                    filteredSubItems.map((subItem, idX) => (
+                  ) : filteredSubItemsWithQuery.length > 0 || hasResults ? (
+                    filteredSubItemsWithQuery.map((subItem, idX) => (
                       <Item
                         key={`${idX}-${subItem.value}`}
                         label={subItem.label}

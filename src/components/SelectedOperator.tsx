@@ -40,7 +40,7 @@ const SelectedOperator: React.FC<any> = ({
     }
   }
 
-  const handleClickOperatorInside = (operator: Operator) => {
+  const handleClickOperatorInside = ( operator: Operator) => {
     setShowOperators(false);
     handleChangeOperator(item, operator);
   }
@@ -50,14 +50,14 @@ const SelectedOperator: React.FC<any> = ({
       <span onClick={(e) => handleClickOperator(e)}>{selectedOperator.label}</span>
 
       {showOperators && (
-        <div className={validateStyle('operatorDropdownContainer')}>
-          <ul className={validateStyle('operatorDropdownItemContainer')}>
+        <div className={validateStyle('dropdownContainer')}>
+          <ul className={validateStyle('dropdownItemContainer')}>
             {operators.map((operator: Operator) => 
               operator && (
                 <Item
                   key={operator.value}
                   label={operator.label}
-                  onClick={() => handleClickOperatorInside(operator)}
+                  onClick={(e) => handleClickOperatorInside(e, operator)}
                   validateStyle={validateStyle}
                 />
               )
