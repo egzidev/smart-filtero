@@ -1,6 +1,6 @@
-import {X} from "lucide-react";
 import React from "react";
 import {SelectedItemCmp} from "@/types";
+import RemoveIcon from "./RemoveIcon";
 
 const SelectedText: React.FC<SelectedItemCmp> = ({
   item,
@@ -10,9 +10,13 @@ const SelectedText: React.FC<SelectedItemCmp> = ({
   return (
     <div className={validateStyle('selectedText')}>
       <span>{item.label}</span>
-      <div className={validateStyle('removeIcon')} onClick={() => removeItem?.(item.value)}>
-        <X size={16}/>
-      </div>
+      <RemoveIcon
+        validateStyle={validateStyle}
+        onClick={(e) => {
+          e.stopPropagation();
+          removeItem?.(item.value);
+        }}
+      />
     </div>
   );
 }

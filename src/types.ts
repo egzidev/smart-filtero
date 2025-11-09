@@ -151,6 +151,8 @@ export interface StyleThemeProps {
   selectedItem?: string;
   selectedText?: string;
   selectedSubItem?: string;
+  selectedOperator?: string;
+  selectedOperatorWrapper?: string;
   selectedSubItemIcon?: string;
   removeIcon?: string;
   searchInput?: string;

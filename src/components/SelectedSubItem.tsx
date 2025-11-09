@@ -1,6 +1,7 @@
-import {X} from "lucide-react";
+import {ChevronDown} from "lucide-react";
 import React from "react";
 import {SelectedSubItemCmp} from "@/types";
+import RemoveIcon from "./RemoveIcon";
 
 const SelectedSubItem = React.forwardRef<HTMLDivElement, SelectedSubItemCmp>(({
   item,
@@ -24,15 +25,14 @@ const SelectedSubItem = React.forwardRef<HTMLDivElement, SelectedSubItemCmp>(({
     return (
       <div ref={ref} className={validateStyle('selectedSubItem')} onClick={onClick}>
         <span>Select {item.label}</span>
-        <div
-          className={validateStyle('removeIcon')}
+        <ChevronDown className={validateStyle('selectedChevronIcon')} size={14} />
+        <RemoveIcon
+          validateStyle={validateStyle}
           onClick={(e) => {
             e.stopPropagation(); // Prevent triggering onClick
             removeItem(item.value); // Remove entire parent item
           }}
-        >
-          <X size={16}/>
-        </div>
+        />
       </div>
     );
   }
@@ -48,12 +48,14 @@ const SelectedSubItem = React.forwardRef<HTMLDivElement, SelectedSubItemCmp>(({
           </div>
         )}
         <span>{subItem.label}</span>
-        <div
-          className={validateStyle('removeIcon')}
-          onClick={() => removeItem(item.value, subItem.value)}
-        >
-          <X size={16}/>
-        </div>
+        <ChevronDown className={validateStyle('selectedChevronIcon')} size={14} />
+        <RemoveIcon
+          validateStyle={validateStyle}
+          onClick={(e) => {
+            e.stopPropagation();
+            removeItem(item.value, subItem.value);
+          }}
+        />
       </div>
     ))
   );

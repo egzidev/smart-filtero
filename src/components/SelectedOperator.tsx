@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
+import {ChevronDown} from "lucide-react";
 import Item from "./../components/Item";
 import {Operator} from "@/types";
 
@@ -46,9 +47,11 @@ const SelectedOperator: React.FC<any> = ({
   }
 
   return (
-    <div ref={operatorRef} className={validateStyle('selectedSubItem')}>
-      <span onClick={(e) => handleClickOperator(e)}>{selectedOperator.label}</span>
-
+    <div ref={operatorRef} className={validateStyle('selectedOperatorWrapper')}>
+      <div className={validateStyle('selectedOperator')} onClick={(e) => handleClickOperator(e)}>
+        <span>{selectedOperator.label}</span>
+        <ChevronDown className={validateStyle('selectedChevronIcon')} size={14} />
+      </div>
       {showOperators && (
         <div className={validateStyle('dropdownContainer')}>
           <ul className={validateStyle('dropdownItemContainer')}>
@@ -57,7 +60,7 @@ const SelectedOperator: React.FC<any> = ({
                 <Item
                   key={operator.value}
                   label={operator.label}
-                  onClick={(e) => handleClickOperatorInside(e, operator)}
+                  onClick={() => handleClickOperatorInside(operator)}
                   validateStyle={validateStyle}
                 />
               )

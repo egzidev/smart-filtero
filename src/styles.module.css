@@ -17,9 +17,39 @@
 
 .selectedItemsContainer {
     display: inline-flex;
+    gap: 0.125rem;
 }
 
 .selectedItemsWrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.125rem;
+}
+
+.selectedOperatorWrapper {
+    display: flex;
+}
+
+.selectedOperator {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--subitem-bg);
+    color: var(--item-text);
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 14px;
+    white-space: nowrap;
+    cursor: pointer;
+    line-height: 1;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.selectedOperator:hover {
+    background-color: var(--subitem-hover-bg, rgba(0, 0, 0, 0.07));
+}
+
+.selectedOperator span {
+    line-height: 1;
     display: inline-flex;
     align-items: center;
 }
@@ -29,11 +59,17 @@
     align-items: center;
     background-color: var(--item-bg);
     color: var(--item-text);
-    padding: 0.25rem 0.5rem;
-    margin-right: 0.25rem;
+    padding: 0.375rem 0.5rem;
     border-radius: 0.25rem;
     flex-shrink: 0;
     font-size: 14px;
+    line-height: 1;
+}
+
+.selectedItem span {
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
 }
 
 .selectedSubItem, .selectedText {
@@ -41,20 +77,47 @@
     align-items: center;
     background-color: var(--subitem-bg);
     color: var(--item-text);
-    padding: 0.25rem 0.5rem;
-    margin-right: 0.25rem;
+    padding: 0.375rem 0.5rem;
     border-radius: 0.25rem;
     font-size: 14px;
     white-space: nowrap;
+    cursor: pointer;
+    line-height: 1;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.selectedSubItem:hover {
+    background-color: var(--subitem-hover-bg, rgba(0, 0, 0, 0.07));
+}
+
+.selectedSubItem span,
+.selectedText span {
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
 }
 
 .selectedSubItemIcon {
     margin-right: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.selectedChevronIcon {
+    margin-left: 0.25rem;
+    color: var(--text-muted, #6b7280);
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
 }
 
 .removeIcon {
     margin-left: 0.25rem;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
 }
 
 .searchInput {
